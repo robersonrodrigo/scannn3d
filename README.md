@@ -1,4 +1,11 @@
-# scannn3d
+#                                   ____      _ 
+                                 |___ \    | |
+  ___  ___ __ _ _ __  _ __  _ __   __) | __| |
+ / __|/ __/ _` | '_ \| '_ \| '_ \ |__ < / _` |
+ \__ \ (_| (_| | | | | | | | | | |___) | (_| |
+ |___/\___\__,_|_| |_|_| |_|_| |_|____/ \__,_|
+                                              
+                                              
 
 Plataforma ofensiva em Go para descoberta de superficie de ataque, varredura web/API, recon modular, orquestracao de pentest e geracao de relatorios.
 
