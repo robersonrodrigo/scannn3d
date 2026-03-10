@@ -28,8 +28,16 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
-	access, _ := auth.IssueToken(s.secret, u.ID, u.Role, 20*time.Minute)
-	refresh, _ := auth.IssueToken(s.secret, u.ID, u.Role, 24*time.Hour)
+	access, err := auth.IssueAccessToken(s.secret, u.ID, u.Role, 20*time.Minute)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "failed to issue access token")
+		return
+	}
+	refresh, err := auth.IssueRefreshToken(s.secret, u.ID, u.Role, 24*time.Hour)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "failed to issue refresh token")
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"access_token": access, "refresh_token": refresh, "user": u})
 }
 
@@ -45,7 +53,7 @@ func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	claims, err := auth.ParseToken(s.secret, req.RefreshToken)
+	claims, err := auth.ParseTokenOfType(s.secret, req.RefreshToken, auth.TokenTypeRefresh)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "invalid refresh token")
 		return
@@ -55,8 +63,17 @@ func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusUnauthorized, "user not found")
 		return
 	}
-	access, _ := auth.IssueToken(s.secret, u.ID, u.Role, 20*time.Minute)
-	writeJSON(w, http.StatusOK, map[string]any{"access_token": access})
+	access, err := auth.IssueAccessToken(s.secret, u.ID, u.Role, 20*time.Minute)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "failed to issue access token")
+		return
+	}
+	refresh, err := auth.IssueRefreshToken(s.secret, u.ID, u.Role, 24*time.Hour)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "failed to issue refresh token")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"access_token": access, "refresh_token": refresh})
 }
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request, user storage.User) {
@@ -100,7 +117,7 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request, us
 		writeErr(w, http.StatusBadRequest, "new password must differ from current password")
 		return
 	}
-	if err := validatePasswordPolicy(newPassword); err != nil {
+	if err := auth.ValidatePasswordPolicy(newPassword); err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -132,7 +149,7 @@ func (s *Server) authenticate(r *http.Request) (storage.User, int, string) {
 	if err != nil {
 		return storage.User{}, http.StatusUnauthorized, "missing bearer token"
 	}
-	claims, err := auth.ParseToken(s.secret, tokenRaw)
+	claims, err := auth.ParseTokenOfType(s.secret, tokenRaw, auth.TokenTypeAccess)
 	if err != nil {
 		return storage.User{}, http.StatusUnauthorized, "invalid token"
 	}

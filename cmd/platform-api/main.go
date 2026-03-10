@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"log/slog"
@@ -28,6 +29,9 @@ import (
 var webFS embed.FS
 
 func main() {
+	if err := loadEnvFile(".env"); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Fatal(err)
+	}
 	listen := envOr("PLATFORM_LISTEN", ":8095")
 	jwtSecret, err := resolveJWTSecret()
 	if err != nil {
@@ -152,8 +156,14 @@ func envInt(key string, def int) int {
 }
 
 func resolveAdminPassword(logger *slog.Logger) (string, error) {
-	adminPassword := os.Getenv("PLATFORM_ADMIN_PASSWORD")
+	adminPassword := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_PASSWORD"))
 	if adminPassword != "" {
+		if looksLikePlaceholderValue(adminPassword) {
+			return "", errors.New("PLATFORM_ADMIN_PASSWORD must be replaced before startup")
+		}
+		if err := auth.ValidatePasswordPolicy(adminPassword); err != nil {
+			return "", fmt.Errorf("PLATFORM_ADMIN_PASSWORD invalid: %w", err)
+		}
 		return adminPassword, nil
 	}
 	generated, err := generateRandomPassword()
@@ -201,13 +211,67 @@ func resolveJWTSecret() (string, error) {
 	if raw == "" {
 		return "", errors.New("PLATFORM_JWT_SECRET is required")
 	}
-	if raw == "change-me-super-secret" {
-		return "", errors.New("PLATFORM_JWT_SECRET cannot use the insecure default value")
+	if looksLikePlaceholderValue(raw) {
+		return "", errors.New("PLATFORM_JWT_SECRET must be replaced before startup")
 	}
 	if len(raw) < 32 {
 		return "", errors.New("PLATFORM_JWT_SECRET must have at least 32 characters")
 	}
 	return raw, nil
+}
+
+func loadEnvFile(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(data), "\n")
+	for idx, rawLine := range lines {
+		line := strings.TrimSpace(strings.TrimSuffix(rawLine, "\r"))
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "export ") {
+			line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			return fmt.Errorf("%s:%d: invalid env assignment", path, idx+1)
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" {
+			return fmt.Errorf("%s:%d: empty env key", path, idx+1)
+		}
+		if len(value) >= 2 {
+			if (value[0] == '"' && value[len(value)-1] == '"') || (value[0] == '\'' && value[len(value)-1] == '\'') {
+				value = value[1 : len(value)-1]
+			}
+		}
+		if _, exists := os.LookupEnv(key); exists {
+			continue
+		}
+		if err := os.Setenv(key, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func looksLikePlaceholderValue(raw string) bool {
+	normalized := strings.NewReplacer("-", "", "_", "", " ", "").Replace(strings.ToLower(strings.TrimSpace(raw)))
+	if normalized == "" {
+		return false
+	}
+	switch normalized {
+	case "changemeadminpassword",
+		"changemejwtsecretwithatleast32chars",
+		"changemesupersecret",
+		"replacemewitharandomsecretatleast32chars",
+		"replacemewithastrongadminpassword1":
+		return true
+	}
+	return strings.HasPrefix(normalized, "changeme") || strings.HasPrefix(normalized, "replaceme")
 }
 
 func parseAllowedOrigins(raw string) []string {

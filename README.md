@@ -19,6 +19,7 @@ Plataforma ofensiva em Go para descoberta, varredura web/API, recon, orquestraca
 
 ```bash
 cp .env.example .env
+# edite .env antes de iniciar
 go run ./cmd/platform-api
 ```
 
@@ -28,10 +29,19 @@ Variaveis importantes:
 - `PLATFORM_ADMIN_PASSWORD`: define a senha inicial do admin.
 - `PLATFORM_DB_DRIVER` e `PLATFORM_DB_DSN`: configuram SQLite ou PostgreSQL.
 
+O binario `platform-api` carrega automaticamente o arquivo `.env` na raiz do projeto quando ele existe.
+
+Exemplo para gerar um secret forte:
+
+```bash
+openssl rand -hex 32
+```
+
 ## Execucao com Docker
 
 ```bash
 cp .env.example .env
+# edite .env antes de subir
 docker compose up -d --build platform-api
 ```
 

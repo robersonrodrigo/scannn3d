@@ -63,26 +63,6 @@ func parseProjectType(raw string) (storage.ProjectType, error) {
 	}
 }
 
-func validatePasswordPolicy(password string) error {
-	if len(password) < 8 {
-		return fmt.Errorf("new password must have at least 8 characters")
-	}
-	hasLetter := false
-	hasDigit := false
-	for _, r := range password {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-			hasLetter = true
-		}
-		if r >= '0' && r <= '9' {
-			hasDigit = true
-		}
-	}
-	if !hasLetter || !hasDigit {
-		return fmt.Errorf("new password must contain at least one letter and one number")
-	}
-	return nil
-}
-
 func EnsureReportBase(path string) {
 	_ = os.MkdirAll(path, 0o750)
 }

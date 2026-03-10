@@ -34,6 +34,10 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request, user storag
 			writeErr(w, http.StatusBadRequest, "username and password are required")
 			return
 		}
+		if err := auth.ValidatePasswordPolicy(password); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		role, err := parseRole(req.Role)
 		if err != nil {
 			writeErr(w, http.StatusBadRequest, err.Error())

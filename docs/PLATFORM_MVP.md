@@ -46,7 +46,7 @@ If not set, the API generates a random password and logs it at startup.
 ## Run with Docker Compose (single entrypoint)
 ```bash
 cp .env.example .env
-# ajuste senhas no arquivo .env
+# ajuste os placeholders no arquivo .env
 docker compose up -d --build platform-api
 ```
 

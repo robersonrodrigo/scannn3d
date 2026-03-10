@@ -19,8 +19,14 @@ import (
 type Claims struct {
 	Sub  string       `json:"sub"`
 	Role storage.Role `json:"role"`
+	Typ  string       `json:"typ,omitempty"`
 	Exp  int64        `json:"exp"`
 }
+
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
 
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -28,6 +34,26 @@ func HashPassword(password string) (string, error) {
 		return "", err
 	}
 	return string(hash), nil
+}
+
+func ValidatePasswordPolicy(password string) error {
+	if len(password) < 8 {
+		return fmt.Errorf("password must have at least 8 characters")
+	}
+	hasLetter := false
+	hasDigit := false
+	for _, r := range password {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			hasLetter = true
+		}
+		if r >= '0' && r <= '9' {
+			hasDigit = true
+		}
+	}
+	if !hasLetter || !hasDigit {
+		return fmt.Errorf("password must contain at least one letter and one number")
+	}
+	return nil
 }
 
 func VerifyPassword(hash, password string) bool {
@@ -56,12 +82,23 @@ func verifyLegacySHA256(hash, password string) bool {
 	return hmac.Equal(h[:], expected)
 }
 
-func IssueToken(secret []byte, userID string, role storage.Role, ttl time.Duration) (string, error) {
+func IssueAccessToken(secret []byte, userID string, role storage.Role, ttl time.Duration) (string, error) {
+	return IssueToken(secret, userID, role, TokenTypeAccess, ttl)
+}
+
+func IssueRefreshToken(secret []byte, userID string, role storage.Role, ttl time.Duration) (string, error) {
+	return IssueToken(secret, userID, role, TokenTypeRefresh, ttl)
+}
+
+func IssueToken(secret []byte, userID string, role storage.Role, tokenType string, ttl time.Duration) (string, error) {
 	if len(secret) == 0 {
 		return "", errors.New("missing token secret")
 	}
+	if tokenType != TokenTypeAccess && tokenType != TokenTypeRefresh {
+		return "", errors.New("invalid token type")
+	}
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
-	claims := Claims{Sub: userID, Role: role, Exp: time.Now().Add(ttl).Unix()}
+	claims := Claims{Sub: userID, Role: role, Typ: tokenType, Exp: time.Now().Add(ttl).Unix()}
 	payloadBytes, err := json.Marshal(claims)
 	if err != nil {
 		return "", err
@@ -94,6 +131,23 @@ func ParseToken(secret []byte, token string) (Claims, error) {
 		return Claims{}, errors.New("token expired")
 	}
 	return c, nil
+}
+
+func ParseTokenOfType(secret []byte, token, expectedType string) (Claims, error) {
+	claims, err := ParseToken(secret, token)
+	if err != nil {
+		return Claims{}, err
+	}
+	if claims.Typ == "" {
+		if expectedType == TokenTypeAccess {
+			return claims, nil
+		}
+		return Claims{}, errors.New("unexpected token type")
+	}
+	if claims.Typ != expectedType {
+		return Claims{}, errors.New("unexpected token type")
+	}
+	return claims, nil
 }
 
 func sign(secret []byte, data string) string {
