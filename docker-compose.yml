@@ -1,0 +1,142 @@
+services:
+  platform-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: scannn3d:latest
+    container_name: scannn3d
+    entrypoint: [ "platform-api" ]
+    ports:
+      - "8095:8095"
+    environment:
+      - PLATFORM_LISTEN=:8095
+      - PLATFORM_REPORTS_DIR=/data/platform-runs
+      - PLATFORM_JWT_SECRET=${PLATFORM_JWT_SECRET:?set PLATFORM_JWT_SECRET in shell or .env}
+      - PLATFORM_ADMIN_PASSWORD=${PLATFORM_ADMIN_PASSWORD:?set PLATFORM_ADMIN_PASSWORD in shell or .env}
+      - PLATFORM_DB_DRIVER=postgres
+      - PLATFORM_DB_DSN=host=pgbouncer port=5432 user=${POSTGRES_USER:-scannn3d} password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shell or .env} dbname=${POSTGRES_DB:-scannn3d} sslmode=disable
+      - PENTEST_MAX_CONCURRENT_JOBS=2
+      - PENTEST_MAX_THREADS=40
+      - POSTGRES_USER=${POSTGRES_USER:-scannn3d}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shell or .env}
+      - POSTGRES_DB=${POSTGRES_DB:-scannn3d}
+    volumes:
+      - ./platform-runs:/data/platform-runs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: scannn3d-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-scannn3d}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shell or .env}
+      - POSTGRES_DB=${POSTGRES_DB:-scannn3d}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: scannn3d-pgbouncer
+    environment:
+      - DB_USER=${POSTGRES_USER:-scannn3d}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shell or .env}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-scannn3d}
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=400
+      - DEFAULT_POOL_SIZE=80
+      - RESERVE_POOL_SIZE=20
+      - AUTH_TYPE=scram-sha-256
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  platform-cli:
+    image: scannn3d:latest
+    container_name: platform-cli
+    profiles: [ "cli" ]
+    entrypoint: [ "platform-cli" ]
+    volumes:
+      - ./platform-runs:/data/platform-runs
+    command: [ "--help" ]
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: scannn3d-zap
+    profiles: [ "external" ]
+    entrypoint: [ "zap.sh" ]
+    command:
+      - "-daemon"
+      - "-host"
+      - "0.0.0.0"
+      - "-port"
+      - "8091"
+      - "-config"
+      - "api.disablekey=true"
+      - "-config"
+      - "api.addrs.addr.name=.*"
+      - "-config"
+      - "api.addrs.addr.regex=true"
+    ports:
+      - "8091:8091"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --silent --output /dev/null --fail http://localhost:8091/JSON/core/view/version/ || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  metasploit:
+    image: metasploitframework/metasploit-framework:latest
+    container_name: scannn3d-metasploit
+    profiles: [ "external" ]
+    command: [ "sleep", "infinity" ]
+
+  recon-subfinder:
+    build:
+      context: .
+      dockerfile: docker/recon/Dockerfile
+    container_name: scannn3d-recon-subfinder
+    profiles: [ "recon" ]
+    command: [ "sh", "-c", "sleep infinity" ]
+
+  recon-ports:
+    build:
+      context: .
+      dockerfile: docker/recon/Dockerfile
+    container_name: scannn3d-recon-ports
+    profiles: [ "recon" ]
+    command: [ "sh", "-c", "sleep infinity" ]
+
+  recon-crawler:
+    build:
+      context: .
+      dockerfile: docker/recon/Dockerfile
+    container_name: scannn3d-recon-crawler
+    profiles: [ "recon" ]
+    command: [ "sh", "-c", "sleep infinity" ]
+
+  recon-enrich:
+    build:
+      context: .
+      dockerfile: docker/recon/Dockerfile
+    container_name: scannn3d-recon-enrich
+    profiles: [ "recon" ]
+    command: [ "sh", "-c", "sleep infinity" ]
+
+volumes:
+  pg_data:

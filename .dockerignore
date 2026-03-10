@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.cache
+platform-runs
+platform-api
+ui-runs
+out-example
+*.log
+tmp
+.DS_Store

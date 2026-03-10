@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>scannn3d AutoScan</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">3D</span>
+        <span class="logo-text">scannn3d</span>
+      </div>
+      <nav class="side-nav">
+        <a href="#" class="nav-item active"><i class="icon-dashboard"></i> Dashboard</a>
+        <a href="#" class="nav-item"><i class="icon-scans"></i> Scans</a>
+        <a href="#" class="nav-item"><i class="icon-reports"></i> Reports</a>
+        <a href="#" class="nav-item"><i class="icon-targets"></i> Targets</a>
+        <a href="#" class="nav-item"><i class="icon-settings"></i> Settings</a>
+        <a href="#" class="nav-item logout"><i class="icon-logout"></i> Logout</a>
+      </nav>
+
+      <div class="recent-jobs-sidebar">
+        <h3>RECENT SCAN JOBS</h3>
+        <div id="jobs"></div>
+      </div>
+    </aside>
+
+    <main class="main-layout">
+      <header class="top-bar">
+        <div class="page-title">scannn3d Dashboard</div>
+        <div class="user-info">
+          <span class="search-box"><i class="icon-search"></i> Global search</span>
+          <span class="notifications">Notifications (5)</span>
+          <span class="profile">Profile</span>
+        </div>
+      </header>
+
+      <div class="dashboard-content">
+        <section id="kpi-banner" class="kpi-container"></section>
+
+        <div class="charts-row">
+          <section class="card chart-card">
+            <h3>SEVERITY DISTRIBUTION</h3>
+            <div class="chart-wrapper">
+              <canvas id="severity-chart"></canvas>
+            </div>
+          </section>
+          <section class="card chart-card">
+            <h3>FINDINGS BY SCAN MODULE</h3>
+            <div class="chart-wrapper">
+              <canvas id="module-chart"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <section class="card scan-trigger">
+          <form id="scan-form" class="inline-form">
+            <input name="target" type="url" required placeholder="https://api.exemplo.com" />
+            <button type="submit">New Scan</button>
+          </form>
+        </section>
+
+        <section class="card findings-section">
+          <div class="section-header">
+            <h2>FINDINGS LIST</h2>
+            <div class="filters">
+              <input type="text" placeholder="Search findings..." class="search-findings">
+              <button class="btn-filter">Filters</button>
+              <button class="btn-sort">Sortable</button>
+            </div>
+          </div>
+          <div id="report"></div>
+        </section>
+
+        <section class="card">
+          <h2>EXECUTION STATUS</h2>
+          <div id="execution-status"></div>
+          <div id="external-tools"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/app.js"></script>
+</body>
+
+</html>

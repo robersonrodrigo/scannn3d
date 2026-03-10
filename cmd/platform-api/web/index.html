@@ -1,0 +1,2626 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Offensive Security Platform</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      color: var(--dk-text, #eef4ff);
+      background: var(--dk-bg, #070b12);
+    }
+
+    .bg-noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .06;
+      background-image: radial-gradient(#fff 0.6px, transparent 0.6px);
+      background-size: 14px 14px;
+    }
+
+    .auth-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: stretch;
+      padding: 0;
+    }
+
+    @keyframes enter {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    #login {
+      width: 100%;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
+    }
+
+    .login-visual {
+      background:
+        linear-gradient(165deg, #0b0f14 0%, #141a22 60%, #0f131a 100%),
+        radial-gradient(circle at 16% 22%, rgba(220, 38, 38, .18), transparent 38%);
+      border-right: 1px solid rgba(255, 255, 255, .07);
+      padding: 48px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .login-logo-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      color: #f3f6fb;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    .login-logo {
+      width: 180px;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .login-logo-fallback {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #e11d48;
+      box-shadow: 0 0 20px rgba(225, 29, 72, .5);
+    }
+
+    .login-visual h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.06;
+      font-weight: 700;
+      color: #f9fbff;
+      max-width: 14ch;
+    }
+
+    .login-visual p {
+      margin: 0;
+      color: #b4bfcc;
+      max-width: 42ch;
+      font-size: .98rem;
+    }
+
+    .visual-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .visual-badges span {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .04);
+      color: #d7dfeb;
+      font-size: .78rem;
+    }
+
+    .login-panel {
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 80% 14%, rgba(32, 177, 193, .08), transparent 34%),
+        linear-gradient(130deg, rgba(8, 21, 26, .96), rgba(13, 42, 49, .93));
+    }
+
+    .login-card {
+      width: min(380px, 100%);
+      background: rgba(17, 28, 38, .78);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 14px;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, .36);
+      padding: 24px;
+      transform: translateY(8px);
+      animation: enter .55s ease forwards;
+    }
+
+    .login-card h2 {
+      margin: 0;
+      font-size: 1.38rem;
+      color: #f5f9ff;
+      text-align: center;
+    }
+
+    .login-card .sub {
+      margin: 8px 0 18px;
+      color: #aab8c8;
+      font-size: .9rem;
+      text-align: center;
+    }
+
+    .login-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .login-input {
+      height: 42px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      background: rgba(6, 10, 16, .65);
+      color: #eaf2ff;
+      padding: 0 12px;
+      font-size: .93rem;
+    }
+
+    .login-input::placeholder {
+      color: #98a7ba;
+    }
+
+    .login-input:focus {
+      outline: none;
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, .15);
+    }
+
+    .login-btn {
+      margin-top: 8px;
+      width: 100%;
+      height: 40px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(120deg, #b91c1c, #ef4444);
+      transition: filter .14s ease, transform .14s ease;
+    }
+
+    .login-btn:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+    }
+
+    .login-hint {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .79rem;
+      color: #98a8ba;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    #login-msg {
+      margin: 10px 0 0;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      background: rgba(69, 10, 10, .48);
+      color: #fecaca;
+      padding: 8px 10px;
+      display: none;
+      white-space: pre-wrap;
+      font-size: .84rem;
+    }
+
+    #app {
+      display: none;
+    }
+
+    @media (max-width: 920px) {
+      #login {
+        grid-template-columns: 1fr;
+      }
+
+      .login-visual {
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+        padding: 28px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="theme-dashboardkit.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div class="bg-noise"></div>
+
+  <section class="auth-shell">
+    <div id="login">
+      <aside class="login-visual">
+        <div>
+          <div class="login-logo-row">
+            <img class="login-logo" src="/logo.svg" alt="Recon Security Platform"
+              onerror="this.classList.add('hidden');document.getElementById('brand-dot').classList.remove('hidden');" />
+            <span class="login-logo-fallback hidden" id="brand-dot"></span>
+          </div>
+          <h1>Offensive Security Platform</h1>
+          <p>Painel unificado para reconhecimento, testes Web/API e correlação de achados com foco em operação ofensiva
+            profissional.</p>
+          <div class="visual-badges">
+            <span>Recon</span>
+            <span>Web/API</span>
+            <span>Correlation</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="login-panel">
+        <div class="login-card">
+          <h2>Entre em sua conta:</h2>
+          <div class="sub">Autentique-se para acessar a plataforma.</div>
+          <div class="login-fields">
+            <input class="login-input" id="user" placeholder="Usuário" autocomplete="username" />
+            <input class="login-input" id="pass" type="password" placeholder="Senha"
+              autocomplete="current-password" />
+            <button class="login-btn" onclick="login()">Entrar</button>
+          </div>
+          <pre id="login-msg"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <h2 class="mb-3">Platform</h2>
+      <div class="nav flex-column gap-1">
+        <a class="nav-link active" data-tab="dashboard-tab" onclick="setTab('dashboard-tab', this)">Dashboard</a>
+        <a class="nav-link" data-tab="scans-tab" onclick="setTab('scans-tab', this)">Scans</a>
+        <a class="nav-link" data-tab="targets-tab" onclick="setTab('targets-tab', this)">Alvos e Risco</a>
+        <a class="nav-link" data-tab="vulns-tab" onclick="setTab('vulns-tab', this)">Vulnerabilidades</a>
+        <a class="nav-link" data-tab="terminal-tab" onclick="setTab('terminal-tab', this)">Terminal Verbose</a>
+        <a class="nav-link" data-tab="pentest-tab" onclick="setTab('pentest-tab', this)">Pentest Orquestrado</a>
+        <a class="nav-link" data-tab="new-scan-tab" onclick="setTab('new-scan-tab', this)">Criar Novo Scan</a>
+        <a class="nav-link" data-tab="projects-tab" onclick="setTab('projects-tab', this)">Projetos</a>
+        <a class="nav-link" data-tab="templates-tab" onclick="setTab('templates-tab', this)">Templates YAML</a>
+        <a class="nav-link" data-tab="account-tab" onclick="setTab('account-tab', this)">Conta</a>
+        <a class="nav-link hidden" id="users-menu-btn" data-tab="management-users-tab"
+          onclick="setTab('management-users-tab', this)">Usuarios</a>
+        <a class="nav-link" data-tab="management-tools-tab"
+          onclick="setTab('management-tools-tab', this)">Ferramentas</a>
+      </div>
+      <hr class="text-secondary" />
+      <button class="btn btn-outline-light w-100 mb-2" onclick="refreshAll()">Atualizar dados</button>
+      <button class="btn btn-danger w-100" onclick="logout()">Sair</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar card mb-3">
+        <div>
+          <h2 class="mb-0">Offensive Security Platform</h2>
+          <div class="muted">Recon, Web/API testing e correlacao em um unico painel.</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn-neutral" onclick="refreshAll()">Atualizar</button>
+          <button class="btn-neutral" onclick="setTab('new-scan-tab')">Novo Scan</button>
+        </div>
+      </div>
+      <section id="dashboard-tab" class="tab-pane active">
+        <div class="card bg-dashboard-hero shadow-sm mb-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="hero-logo">3D</div>
+            <div>
+              <h2 class="mb-0">scannn3d Dashboard</h2>
+              <div class="muted">Visão executiva e telemetria de segurança em tempo real.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="kpi-banner" class="kpi-grid mb-4">
+          <div class="kpi">
+            <div class="kpi-header">
+              <div class="label">TOTAL SCANS</div>
+              <div class="kpi-trend text-mint">+10%</div>
+            </div>
+            <div class="value text-mint" id="kpi-scans">0</div>
+            <div class="kpi-tag">scans registrados</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-header">
+              <div class="label">VULNERABILIDADES</div>
+              <div class="kpi-trend text-amber">+5%</div>
+            </div>
+            <div class="value text-amber" id="kpi-vulns">0</div>
+            <div class="kpi-tag">achados totais</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-header">
+              <div class="label">SCANS ATIVOS</div>
+              <div class="kpi-trend text-blue">Live</div>
+            </div>
+            <div class="value text-blue" id="kpi-running">0</div>
+            <div class="kpi-tag">em execução agora</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-header">
+              <div class="label">ALVOS</div>
+            </div>
+            <div class="value" id="kpi-targets">0</div>
+            <div class="kpi-tag">endpoints monitorados</div>
+          </div>
+        </div>
+
+        <div class="charts-row">
+          <div class="card chart-card">
+            <h3>DISTRIBUIÇÃO DE SEVERIDADE</h3>
+            <div class="chart-wrapper">
+              <canvas id="severity-chart"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <h3>ACHADOS POR MÓDULO</h3>
+            <div class="chart-wrapper">
+              <canvas id="module-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scans-tab" class="tab-pane">
+        <div class="scans-master-detail">
+          <div class="card">
+            <h3>Historico de Scans</h3>
+            <div class="muted">Selecione um scan para visualizar resumo técnico e relatórios.</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Alvo</th>
+                    <th>Status</th>
+                    <th>Mode</th>
+                    <th>Inicio</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="scans"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Detalhes do Scan</h3>
+            <div id="scan-detail-empty" class="muted">Selecione um scan para visualizar detalhes e baixar relatórios.</div>
+            <div id="scan-detail-content" class="hidden">
+              <div class="scan-detail-grid">
+                <div><strong>ID:</strong> <span id="detail-scan-id">-</span></div>
+                <div><strong>Status:</strong> <span id="detail-scan-status">-</span></div>
+                <div><strong>Alvo:</strong> <span id="detail-scan-target">-</span></div>
+                <div><strong>Modo:</strong> <span id="detail-scan-mode">-</span></div>
+                <div><strong>Tipo:</strong> <span id="detail-scan-type">-</span></div>
+                <div><strong>Perfil:</strong> <span id="detail-scan-profile">-</span></div>
+                <div><strong>Inicio:</strong> <span id="detail-scan-started">-</span></div>
+                <div><strong>Fim:</strong> <span id="detail-scan-finished">-</span></div>
+              </div>
+              <div id="detail-scan-error-wrap" class="muted hidden"><strong>Erro:</strong> <span id="detail-scan-error">-</span></div>
+
+              <div class="scan-severity-row">
+                <span class="pill high">critical: <span id="detail-sev-critical">0</span></span>
+                <span class="pill high">high: <span id="detail-sev-high">0</span></span>
+                <span class="pill warn">medium: <span id="detail-sev-medium">0</span></span>
+                <span class="pill low">low: <span id="detail-sev-low">0</span></span>
+                <span class="pill low">info: <span id="detail-sev-info">0</span></span>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn-neutral" onclick="downloadSelectedReport('json')">Download JSON</button>
+                <button class="btn-neutral" onclick="downloadSelectedReport('html')">Download HTML</button>
+                <button class="btn-neutral" id="scan-detail-download-txt" onclick="downloadSelectedTxtReport()">Baixar TXT</button>
+                <button class="btn-neutral" onclick="openSelectedScanInTerminal()">Abrir no Terminal</button>
+              </div>
+              <div id="scan-detail-txt-hint" class="muted"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="targets-tab" class="tab-pane">
+        <div class="card">
+          <h3>Alvos e Criticidade</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Alvo</th>
+                  <th>Scans</th>
+                  <th>Critical</th>
+                  <th>High</th>
+                  <th>Medium</th>
+                  <th>Low</th>
+                </tr>
+              </thead>
+              <tbody id="target-risk"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="vulns-tab" class="tab-pane">
+        <div class="card">
+          <h3>Vulnerabilidades Recentes</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Alvo</th>
+                  <th>Titulo</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody id="vulns"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="terminal-tab" class="tab-pane">
+        <div class="card">
+          <h3>Terminal de Execucao (Verbose)</h3>
+          <div class="row">
+            <select id="log-scan-select" onchange="attachTerminalToSelected()"></select>
+            <button class="btn-neutral" onclick="reconnectTerminal()">Reconectar</button>
+            <button class="btn-neutral" onclick="clearTerminal()">Limpar</button>
+            <span id="log-stream-state" class="muted stream-state">desconectado</span>
+          </div>
+          <div id="scan-terminal" class="terminal">Aguardando selecao de scan...</div>
+        </div>
+        <div class="card">
+          <h3>Etapas do Scan</h3>
+          <div class="muted">Resumo estruturado de cada etapa (wafw00f, whatweb, nmap, webscan).</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>Status</th>
+                  <th>Resumo</th>
+                  <th>Severidade</th>
+                </tr>
+              </thead>
+              <tbody id="step-results"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Subdomains Descobertos</h3>
+          <div class="muted" id="subdomains-count">0 encontrados</div>
+          <div id="subdomains-empty" class="muted mt-2">Nenhum subdominio descoberto para este scan.</div>
+          <div class="table-wrap mt-2">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subdomain</th>
+                  <th>Origem</th>
+                </tr>
+              </thead>
+              <tbody id="subdomains-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="pentest-tab" class="tab-pane">
+        <div class="card">
+          <h3>Novo Pentest Job</h3>
+          <div class="muted">Execucao segura de Dirsearch, FFUF, Nuclei (WEB) e Nmap (INFRA), com logs em tempo real e
+            parada controlada.</div>
+          <div class="form-grid form-grid-4 mt-2">
+            <div class="form-field">
+              <label class="field-label" for="pentest-target">Alvo</label>
+              <input id="pentest-target" placeholder="https://app.exemplo.com ou 10.0.0.8" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="pentest-module">Modulo</label>
+              <select id="pentest-module">
+                <option value="auto">auto</option>
+                <option value="web">web</option>
+                <option value="infra">infra</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="pentest-target-type">Tipo de alvo</label>
+              <select id="pentest-target-type">
+                <option value="auto">auto</option>
+                <option value="url">url</option>
+                <option value="ip">ip</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="pentest-threads">Threads</label>
+              <input id="pentest-threads" type="number" min="1" max="80" value="20" />
+            </div>
+          </div>
+          <div class="form-grid form-grid-4 mt-2">
+            <div class="form-field">
+              <label class="field-label"><input id="tool-dirsearch" type="checkbox" checked /> dirsearch</label>
+            </div>
+            <div class="form-field">
+              <label class="field-label"><input id="tool-ffuf" type="checkbox" checked /> ffuf</label>
+            </div>
+            <div class="form-field">
+              <label class="field-label"><input id="tool-nuclei" type="checkbox" checked /> nuclei</label>
+            </div>
+            <div class="form-field">
+              <label class="field-label"><input id="tool-nmap" type="checkbox" /> nmap</label>
+            </div>
+          </div>
+          <div class="form-field mt-2">
+            <label class="field-label" for="pentest-args-json">Argumentos customizados (JSON)</label>
+            <textarea id="pentest-args-json" rows="4"
+              placeholder='{"ffuf":{"rate":"80"},"nmap":{"top_ports":"200"}}'></textarea>
+          </div>
+          <div class="form-actions mt-3">
+            <button class="btn-action" onclick="createPentestJob()">Iniciar Pentest Job</button>
+            <button class="btn-neutral" onclick="refreshPentestJobs()">Atualizar Jobs</button>
+          </div>
+          <div class="feedback" id="pentest-feedback"></div>
+        </div>
+
+        <div class="card">
+          <h3>Jobs de Pentest</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Alvo</th>
+                  <th>Modulo</th>
+                  <th>Status</th>
+                  <th>Tools</th>
+                  <th>Inicio</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="pentest-jobs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Terminal Pentest Job</h3>
+          <div class="form-actions">
+            <select id="pentest-job-select" onchange="attachPentestJob(this.value)"></select>
+            <button class="btn-neutral" onclick="reconnectPentestStream()">Reconectar</button>
+            <button class="btn-neutral" onclick="stopPentestJob()">Parar Job</button>
+            <button class="btn-neutral" onclick="downloadPentestReport()">Baixar TXT</button>
+            <span id="pentest-stream-state" class="muted stream-state">desconectado</span>
+          </div>
+          <div id="pentest-terminal" class="terminal">Aguardando selecao de pentest job...</div>
+        </div>
+      </section>
+
+      <section id="new-scan-tab" class="tab-pane">
+        <div class="card">
+          <h3>Criar Novo Scan</h3>
+          <div class="muted">Fluxo guiado em 3 passos: alvo → estrategia → confirmacao e execucao. Para dominios,
+            subfinder e validacao de subdominios sao aplicados automaticamente.</div>
+          <div class="wizard-steps">
+            <span id="scan-step-indicator-1" class="wiz-step active">1. Alvo</span>
+            <span id="scan-step-indicator-2" class="wiz-step">2. Estrategia</span>
+            <span id="scan-step-indicator-3" class="wiz-step">3. Confirmar</span>
+          </div>
+          <div id="scan-step-1">
+            <div class="form-grid form-grid-4">
+              <div class="form-field">
+                <label class="field-label" for="target-type">Tipo de alvo</label>
+                <select id="target-type" onchange="syncTargetTypeHint()">
+                  <option value="auto">Auto detectar</option>
+                  <option value="url">URL Especifica</option>
+                  <option value="ip">IP</option>
+                  <option value="domain">Dominio</option>
+                </select>
+              </div>
+              <div class="form-field field-span-2">
+                <label class="field-label" for="target">Alvo</label>
+                <input id="target" class="field-target"
+                  placeholder="https://app.exemplo.com | 10.0.0.8 | exemplo.com" />
+              </div>
+              <div class="form-field">
+                <label class="field-label" for="mode">Modo</label>
+                <select id="mode">
+                  <option value="">auto (recomendado)</option>
+                  <option value="full">full</option>
+                  <option value="infra">infra</option>
+                  <option value="web">web</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="validate-scan-btn" class="btn-neutral" onclick="runScanPreflight(true)">Validar e
+                Avancar</button>
+            </div>
+            <div class="muted" id="target-hint">Auto: detecta URL/IP/Dominio automaticamente. Dominios habilitam
+              subfinder e validacao de subdominios.</div>
+          </div>
+          <div id="scan-step-2" class="hidden">
+            <div class="card wizard-card">
+              <h3 class="card-title-tight">Plano de Execucao</h3>
+              <div id="scan-preflight-summary" class="muted">Execute a validacao para gerar o plano.</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-neutral" onclick="goToScanStep(1)">Voltar e Editar</button>
+              <button class="btn-neutral" onclick="runScanPreflight(true)">Revalidar</button>
+              <button class="btn-neutral" onclick="goToScanStep(3)">Avancar p/ Confirmacao</button>
+            </div>
+          </div>
+          <div id="scan-step-3" class="hidden">
+            <div class="card wizard-card">
+              <h3 class="card-title-tight">Confirmacao</h3>
+              <div class="muted" id="scan-review">Revise os dados antes de enfileirar.</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-neutral" onclick="goToScanStep(2)">Voltar</button>
+              <button id="create-scan-btn" class="btn-action" onclick="createScan()">Iniciar Scan</button>
+            </div>
+          </div>
+          <div class="feedback" id="scan-feedback"></div>
+        </div>
+      </section>
+
+      <section id="projects-tab" class="tab-pane">
+        <div class="card">
+          <h3>Gerenciamento de Projetos</h3>
+          <div class="form-grid form-grid-3">
+            <div class="form-field">
+              <label class="field-label" for="project-name">Nome</label>
+              <input id="project-name" placeholder="nome do projeto" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="project-type">Tipo</label>
+              <select id="project-type">
+                <option value="web">web</option>
+                <option value="api">api</option>
+                <option value="bug_bounty">bug_bounty</option>
+                <option value="ctf">ctf</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="project-scope">Escopo</label>
+              <input id="project-scope" class="field-scope" placeholder="dominio.com, api.dominio.com/v1" />
+            </div>
+          </div>
+          <div class="form-grid form-grid-3 mt-2">
+            <div class="form-field field-span-2">
+              <label class="field-label" for="project-description">Descricao (opcional)</label>
+              <input id="project-description" class="field-description" placeholder="descricao (opcional)" />
+            </div>
+            <div class="form-field form-field-action">
+              <label class="field-label">&nbsp;</label>
+              <button id="create-project-btn" class="btn-action" onclick="createProject()">Criar Projeto</button>
+            </div>
+          </div>
+          <div class="feedback" id="project-feedback"></div>
+        </div>
+        <div class="card">
+          <h3>Projetos Cadastrados</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Escopo</th>
+                  <th>Criado em</th>
+                </tr>
+              </thead>
+              <tbody id="projects"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="templates-tab" class="tab-pane">
+        <div class="card">
+          <h3>Templates de Escaneamento (YAML)</h3>
+          <div class="muted">Gerencie seus templates customizados do motor de escaneamento. Arquivos .yaml suportam payloads, matchers e metadados.</div>
+          <div class="form-grid form-grid-3 mt-3">
+            <div class="form-field field-span-2">
+              <label class="field-label" for="template-upload">Upload de novo template (.yaml)</label>
+              <input type="file" id="template-upload" class="form-control" accept=".yaml,.yml" />
+            </div>
+            <div class="form-field form-field-action">
+              <label class="field-label">&nbsp;</label>
+              <button class="btn-action" onclick="uploadTemplate()">Upload Template</button>
+            </div>
+          </div>
+          <div class="feedback" id="template-feedback"></div>
+        </div>
+        <div class="card">
+          <h3>Biblioteca de Templates</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Severidade</th>
+                  <th>Arquivo</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="templates-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="account-tab" class="tab-pane">
+        <div class="card">
+          <h3>Alterar Senha</h3>
+          <div class="muted">Troque sua senha de acesso informando a senha atual.</div>
+          <div class="form-grid form-grid-3 mt-2">
+            <div class="form-field">
+              <label class="field-label" for="account-current-password">Senha atual</label>
+              <input id="account-current-password" type="password" autocomplete="current-password" placeholder="senha atual" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="account-new-password">Nova senha</label>
+              <input id="account-new-password" type="password" autocomplete="new-password" placeholder="nova senha" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="account-confirm-password">Confirmar nova senha</label>
+              <input id="account-confirm-password" type="password" autocomplete="new-password" placeholder="confirmar nova senha" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-action" onclick="changeMyPassword()">Atualizar Senha</button>
+          </div>
+          <div class="feedback" id="account-feedback"></div>
+        </div>
+      </section>
+
+      <section id="management-users-tab" class="tab-pane">
+        <div class="card hidden" id="users-card">
+          <h3>Gerenciador de Usuarios</h3>
+          <div class="form-grid form-grid-4">
+            <div class="form-field">
+              <label class="field-label" for="new-username">Usuario</label>
+              <input id="new-username" placeholder="novo usuario" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="new-password">Senha inicial</label>
+              <input id="new-password" type="password" placeholder="senha inicial" />
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="new-role">Perfil</label>
+              <select id="new-role">
+                <option value="viewer">views</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+            <div class="form-field form-field-action">
+              <label class="field-label">&nbsp;</label>
+              <button class="btn-action" onclick="createUser()">Criar Usuario</button>
+            </div>
+          </div>
+          <div class="feedback" id="users-feedback"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Perfil</th>
+                  <th>Criado em</th>
+                </tr>
+              </thead>
+              <tbody id="users"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" id="users-readonly-msg">
+          <h3>Gerenciador de Usuarios</h3>
+          <div class="muted">Apenas administradores podem visualizar e gerenciar usuarios.</div>
+        </div>
+      </section>
+
+      <section id="management-tools-tab" class="tab-pane">
+        <div class="card">
+          <h3>Ferramentas Integradas</h3>
+          <div class="muted">Status operacional das ferramentas no container principal.</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ferramenta</th>
+                  <th>Status</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody id="tools-status"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <script>
+    const TOKEN_KEY = 'platform-access-token';
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    const USER_KEY = 'platform-current-user';
+    let currentUser = null;
+    try { currentUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch { currentUser = null; }
+    let scansCache = [];
+    let targetsCache = [];
+    let vulnsCache = [];
+    let projectsCache = [];
+    let pentestJobsCache = [];
+    let streamAbort = null;
+    let terminalScanID = '';
+    let terminalLastSeq = 0;
+    let subdomainsByScan = {};
+    let scanPreflight = null;
+    let scanWizardStep = 1;
+    const TERMINAL_MAX_LINES = 2000;
+    const METHODOLOGY_LABELS = {
+      url: 'Web/API Scan',
+      ip: 'Infra Scan',
+      domain: 'Full Recon'
+    };
+    let stepResultsCache = {};
+    let pentestWS = null;
+    let pentestPollTimer = null;
+    let pentestJobID = '';
+    let pentestLastSeq = 0;
+    let selectedScanID = '';
+
+    async function api(path, options = {}) {
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(path, Object.assign({}, options, { headers }));
+      const text = await res.text();
+      let data = {};
+      try { data = JSON.parse(text || '{}'); } catch { data = { raw: text }; }
+      if (!res.ok) {
+        if (res.status === 401) {
+          clearSession();
+          syncRouteView();
+        }
+        throw new Error(data.error || text || 'request error');
+      }
+      return data;
+    }
+
+    async function downloadWithAuth(path, fallbackName) {
+      if (!token) {
+        showToast('err', 'Sessao expirada. Faca login novamente.');
+        return;
+      }
+      const res = await fetch(path, {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) {
+        let msg = `falha no download (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body && body.error) msg = body.error;
+        } catch (_) {
+          try {
+            const raw = await res.text();
+            if (raw) msg = raw;
+          } catch (_) {}
+        }
+        if (res.status === 401) {
+          clearSession();
+          syncRouteView();
+        }
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get('Content-Disposition') || '';
+      let filename = fallbackName;
+      const m = cd.match(/filename=\"?([^\";]+)\"?/i);
+      if (m && m[1]) filename = m[1];
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'report.txt';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+
+    async function login() {
+      try {
+        const data = await api('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ username: document.getElementById('user').value, password: document.getElementById('pass').value }) });
+        token = data.access_token || '';
+        currentUser = data.user || null;
+        localStorage.setItem(TOKEN_KEY, token);
+        if (currentUser) localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+        document.getElementById('login-msg').style.display = 'none';
+        navigateTo('/');
+        syncRouteView();
+        showToast('ok', 'Login realizado com sucesso.');
+        refreshAll();
+      } catch (e) {
+        const el = document.getElementById('login-msg');
+        el.textContent = e.message;
+        el.style.display = 'block';
+      }
+    }
+
+    function clearSession() {
+      stopTerminalStream();
+      stopPentestStream();
+      token = '';
+      currentUser = null;
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+
+    function logout() {
+      clearSession();
+      navigateTo('/login');
+      syncRouteView();
+      showToast('ok', 'Sessao encerrada.');
+    }
+
+    function navigateTo(path) {
+      if (window.location.pathname !== path) {
+        window.history.replaceState({}, '', path);
+      }
+    }
+
+    function syncRouteView() {
+      const authShell = document.querySelector('.auth-shell');
+      const app = document.getElementById('app');
+      const wantsLogin = window.location.pathname === '/login';
+      const authenticated = !!token;
+
+      if (authenticated && wantsLogin) {
+        navigateTo('/');
+      } else if (!authenticated && !wantsLogin) {
+        navigateTo('/login');
+      }
+
+      const showApp = !!token && window.location.pathname !== '/login';
+      authShell.style.display = showApp ? 'none' : 'grid';
+      app.style.display = showApp ? 'grid' : 'none';
+      updateRoleUI();
+    }
+
+    async function createScan() {
+      if (!canCreateScans()) {
+        setScanFeedback('Perfil viewer possui acesso somente leitura.', true);
+        showToast('err', 'Perfil viewer nao pode criar scans.');
+        return;
+      }
+      if (!scanPreflight || !scanPreflight.can_submit) {
+        setScanFeedback('Valide o alvo antes de criar o scan.', true);
+        showToast('err', 'Execute a validacao no passo 1.');
+        return;
+      }
+      const target = document.getElementById('target').value.trim();
+      const mode = scanPreflight.resolved_mode;
+      const targetType = scanPreflight.resolved_target_type;
+      const includeSubfinder = !!scanPreflight.include_subfinder;
+      try {
+        const created = await api('/api/v1/scans', {
+          method: 'POST', body: JSON.stringify({
+            target,
+            mode,
+            target_type: targetType,
+            include_subfinder: includeSubfinder,
+            profile: scanPreflight.profile || '',
+          })
+        });
+        setScanFeedback(`Scan ${created.id} criado (${created.mode}) para ${scanPreflight.normalized_target}.`, false);
+        showToast('ok', `Scan ${created.id} criado com sucesso.`);
+        scanPreflight = null;
+        goToScanStep(1);
+        setTab('dashboard-tab', document.querySelector('[data-tab="dashboard-tab"]'));
+        await refreshAll();
+        const logSel = document.getElementById('log-scan-select');
+        if (logSel) {
+          logSel.value = created.id;
+          attachTerminalToSelected();
+        }
+      } catch (e) {
+        const msg = e.message || 'Falha ao criar scan.';
+        if (msg.includes('duplicate scan in progress')) {
+          setScanFeedback('Ja existe scan em andamento para este alvo/modo. Revise o passo 2.', true);
+          showToast('err', 'Scan duplicado em andamento.');
+          goToScanStep(2);
+        } else {
+          setScanFeedback(msg, true);
+          showToast('err', msg);
+        }
+      }
+    }
+
+    async function runScanPreflight() {
+      if (!canCreateScans()) {
+        setScanFeedback('Perfil viewer possui acesso somente leitura.', true);
+        return;
+      }
+      const target = document.getElementById('target').value.trim();
+      const mode = document.getElementById('mode').value;
+      const targetType = document.getElementById('target-type').value;
+      const includeSubfinder = targetType === 'domain';
+      if (!target) {
+        setScanFeedback('Informe um alvo para validar.', true);
+        showToast('err', 'Informe um alvo para validar.');
+        return;
+      }
+      setScanFeedback('Validando alvo e montando estrategia...', false);
+      try {
+        const result = await api('/api/v1/scans/preflight', {
+          method: 'POST', body: JSON.stringify({
+            target,
+            mode: mode || '',
+            target_type: targetType,
+            include_subfinder: includeSubfinder,
+          })
+        });
+        scanPreflight = result;
+        applyMethodology(result);
+        renderScanPreflightSummary(result);
+        setScanFeedback('Validacao concluida. Revise o passo 2 e confirme.', false);
+        goToScanStep(2);
+      } catch (e) {
+        scanPreflight = null;
+        setScanFeedback(e.message || 'Falha na validacao do alvo.', true);
+        showToast('err', e.message || 'Falha na validacao do alvo.');
+      }
+    }
+
+    function applyMethodology(pre) {
+      if (!pre) return;
+      const tt = pre.resolved_target_type || 'auto';
+      const mode = pre.resolved_mode || '';
+      // Ajusta selects para refletir deteccao
+      const selType = document.getElementById('target-type');
+      const selMode = document.getElementById('mode');
+      if (selType) {
+        selType.value = tt;
+      }
+      if (selMode) {
+        selMode.value = mode || '';
+      }
+      updateTargetInputGuidance();
+    }
+
+    function renderScanPreflightSummary(data) {
+      const container = document.getElementById('scan-preflight-summary');
+      if (!container) return;
+      if (!data) {
+        container.innerHTML = 'Execute a validacao para gerar o plano.';
+        return;
+      }
+      const execPlan = data.execution_plan || {};
+      const phases = Array.isArray(execPlan.phases) ? execPlan.phases : [];
+      const tools = Array.isArray(execPlan.tools) ? execPlan.tools : [];
+      const notes = Array.isArray(execPlan.notes) ? execPlan.notes : [];
+      const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+      const duplicate = data.duplicate || { blocked: false };
+      const warningHTML = warnings.length > 0
+        ? `<div class="feedback error d-block mt-2">${warnings.join(' | ')}</div>`
+        : '';
+      const duplicateHTML = duplicate.blocked
+        ? `<div class="feedback error d-block mt-2">Scan duplicado em andamento. ID: ${duplicate.existing_scan_id || '-'}</div>`
+        : `<div class="feedback d-block mt-2">Sem conflito de duplicidade. Pronto para enfileirar.</div>`;
+      const methodology = METHODOLOGY_LABELS[data.resolved_target_type] || 'Estrategia auto';
+      container.innerHTML = `
+    <div><strong>Metodologia:</strong> ${methodology}</div>
+    <div><strong>Alvo normalizado:</strong> ${data.normalized_target || '-'}</div>
+    <div><strong>Tipo:</strong> ${data.resolved_target_type || '-'} | <strong>Modo:</strong> ${data.resolved_mode || '-'} | <strong>Perfil:</strong> ${data.profile || '-'}</div>
+    ${data.resolved_target_type === 'url' ? '<div class="muted mt-1">Sequencia URL: wafw00f → whatweb → nmap → Web/API.</div>' : ''}
+    <div class="plan-label mt-2"><strong>Fases</strong></div>
+    <ul class="scan-plan-list">${phases.map(p => `<li>${p}</li>`).join('') || '<li>n/a</li>'}</ul>
+    <div class="plan-label mt-2"><strong>Ferramentas</strong></div>
+    <ul class="scan-plan-list">${tools.map(t => `<li>${t}</li>`).join('') || '<li>n/a</li>'}</ul>
+    <div class="plan-label mt-2"><strong>Notas</strong></div>
+    <ul class="scan-plan-list">${notes.map(n => `<li>${n}</li>`).join('') || '<li>n/a</li>'}</ul>
+    ${warningHTML}
+    ${duplicateHTML}
+  `;
+      const submitBtn = document.getElementById('create-scan-btn');
+      if (submitBtn) {
+        submitBtn.disabled = !data.can_submit;
+        submitBtn.title = data.can_submit ? '' : 'Existe scan em andamento para este alvo/modo';
+      }
+      renderScanReview();
+    }
+
+    function goToScanStep(step) {
+      const targetStep = step === 3 ? 3 : (step === 2 ? 2 : 1);
+      // Impede ir para confirmacao sem preflight valido
+      if (targetStep === 3 && (!scanPreflight || !scanPreflight.can_submit)) {
+        showToast('err', 'Finalize a validacao antes de confirmar.');
+        return;
+      }
+      scanWizardStep = targetStep;
+      const s1 = document.getElementById('scan-step-1');
+      const s2 = document.getElementById('scan-step-2');
+      const s3 = document.getElementById('scan-step-3');
+      const i1 = document.getElementById('scan-step-indicator-1');
+      const i2 = document.getElementById('scan-step-indicator-2');
+      const i3 = document.getElementById('scan-step-indicator-3');
+      if (s1) s1.classList.toggle('hidden', scanWizardStep !== 1);
+      if (s2) s2.classList.toggle('hidden', scanWizardStep !== 2);
+      if (s3) s3.classList.toggle('hidden', scanWizardStep !== 3);
+      if (i1) i1.classList.toggle('active', scanWizardStep === 1);
+      if (i2) i2.classList.toggle('active', scanWizardStep === 2);
+      if (i3) i3.classList.toggle('active', scanWizardStep === 3);
+      if (scanWizardStep === 3) {
+        renderScanReview();
+      }
+    }
+
+    function renderScanReview() {
+      const rev = document.getElementById('scan-review');
+      if (!rev) return;
+      if (!scanPreflight) {
+        rev.textContent = 'Valide o alvo para revisar.';
+        return;
+      }
+      const dup = scanPreflight.duplicate || { blocked: false };
+      rev.innerHTML = `
+    <div><strong>Alvo:</strong> ${scanPreflight.normalized_target || '-'}</div>
+    <div><strong>Tipo:</strong> ${scanPreflight.resolved_target_type || '-'} | <strong>Modo:</strong> ${scanPreflight.resolved_mode || '-'}</div>
+    <div><strong>Perfil:</strong> ${scanPreflight.profile || '-'}</div>
+    <div><strong>Duplicidade:</strong> ${dup.blocked ? 'Bloqueado (scan ' + (dup.existing_scan_id || '-') + ')' : 'Nenhuma'}</div>
+  `;
+      const submitBtn = document.getElementById('create-scan-btn');
+      if (submitBtn) {
+        submitBtn.disabled = dup.blocked || !scanPreflight.can_submit;
+        submitBtn.title = dup.blocked ? 'Existe scan em andamento para este alvo/modo' : '';
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        if (token && !currentUser) {
+          currentUser = await api('/api/v1/auth/me');
+          localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+          updateRoleUI();
+        }
+        scansCache = await api('/api/v1/scans');
+        targetsCache = await api('/api/v1/targets');
+        vulnsCache = await api('/api/v1/vulnerabilities');
+        projectsCache = await api('/api/v1/projects');
+        renderScanSelectors(scansCache);
+        renderScans(scansCache);
+        renderSelectedScanDetails();
+        renderVulns(vulnsCache);
+        renderProjects(projectsCache);
+        renderTargetRisk(targetsCache, scansCache, vulnsCache);
+        renderDashboardKPIs(scansCache, targetsCache, vulnsCache);
+        await refreshPentestJobs();
+        await refreshTemplates();
+        ensureTerminalSelection();
+        if (isAdmin()) {
+          const users = await api('/api/v1/users');
+          renderUsers(users);
+          const tools = await api('/api/v1/admin/tools');
+          renderToolsStatus(tools);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function renderScans(items) {
+      const tbody = document.getElementById('scans');
+      tbody.innerHTML = '';
+      if (!items || items.length === 0) {
+        setEmptyRow(tbody, 6);
+        return;
+      }
+      items.forEach(s => {
+        const tr = document.createElement('tr');
+        if (s.id === selectedScanID) {
+          tr.classList.add('scan-row-selected');
+        }
+        const started = s.started_at ? new Date(s.started_at).toLocaleString() : '';
+        tr.innerHTML = `<td>${s.id}</td><td>${resolveTargetAddress(s.target_id)}</td><td>${statusPillHTML(s.status)}</td><td>${s.mode || '-'}</td><td>${started || '-'}</td>`;
+        tr.addEventListener('click', () => selectScan(s.id));
+        const actionTD = document.createElement('td');
+        const btn = document.createElement('button');
+        btn.className = 'btn-neutral';
+        btn.textContent = s.id === selectedScanID ? 'Selecionado' : 'Selecionar';
+        btn.disabled = s.id === selectedScanID;
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          selectScan(s.id);
+        });
+        actionTD.appendChild(btn);
+        tr.appendChild(actionTD);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderVulns(vulns) {
+      const tbody = document.getElementById('vulns');
+      tbody.innerHTML = '';
+      const top = (vulns || []).slice(0, 30);
+      if (top.length === 0) {
+        setEmptyRow(tbody, 4);
+        return;
+      }
+      top.forEach(v => {
+        const tr = document.createElement('tr');
+        const sev = (v.severity || 'low').toLowerCase();
+        const targetObj = targetsCache.find(t => t.id === v.target_id);
+        tr.innerHTML = `<td><span class="pill ${sev}">${sev}</span></td><td>${targetObj ? targetObj.address : '-'}</td><td>${v.title}</td><td>${v.type}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function downloadSelectedReport(fmt) {
+      const scan = scansCache.find(s => s.id === selectedScanID);
+      if (!scan) {
+        showToast('err', 'Selecione um scan para baixar o relatorio.');
+        return;
+      }
+      const filename = `${scan.id}-platform-report.${fmt}`;
+      try {
+        await downloadWithAuth(`/api/v1/reports/scans/${scan.id}.${fmt}`, filename);
+      } catch (e) {
+        showToast('err', e.message || 'Falha ao baixar relatorio.');
+      }
+    }
+
+    async function downloadSelectedTxtReport() {
+      const scan = scansCache.find(s => s.id === selectedScanID);
+      if (!scan) {
+        showToast('err', 'Selecione um scan para baixar o report TXT.');
+        return;
+      }
+      const job = findPentestJobForScan(scan);
+      if (!job) {
+        showToast('err', 'Nenhum report TXT de pentest relacionado a este scan.');
+        return;
+      }
+      try {
+        await downloadWithAuth(`/api/v1/pentest/jobs/${job.id}/report.txt`, `${job.id}-summary.txt`);
+      } catch (e) {
+        showToast('err', e.message || 'Falha ao baixar report TXT.');
+      }
+    }
+
+    function setScanFeedback(msg, isError) {
+      const el = document.getElementById('scan-feedback');
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.classList.remove('error');
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.classList.toggle('error', !!isError);
+    }
+
+    function setProjectFeedback(msg, isError) {
+      const el = document.getElementById('project-feedback');
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.classList.remove('error');
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.classList.toggle('error', !!isError);
+    }
+
+    function setAccountFeedback(msg, isError) {
+      const el = document.getElementById('account-feedback');
+      if (!el) return;
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.classList.remove('error');
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.classList.toggle('error', !!isError);
+    }
+
+    function setPentestFeedback(msg, isError) {
+      const el = document.getElementById('pentest-feedback');
+      if (!el) return;
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.classList.remove('error');
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.classList.toggle('error', !!isError);
+    }
+
+    function selectedPentestTools() {
+      const tools = [];
+      ['dirsearch', 'ffuf', 'nuclei', 'nmap'].forEach((t) => {
+        const el = document.getElementById(`tool-${t}`);
+        if (el && el.checked) {
+          tools.push(t);
+        }
+      });
+      return tools;
+    }
+
+    function clearPentestTerminal() {
+      const term = document.getElementById('pentest-terminal');
+      if (term) term.textContent = '';
+    }
+
+    function appendPentestLine(ev) {
+      const term = document.getElementById('pentest-terminal');
+      if (!term) return;
+      const level = String(ev.level || 'INFO').toUpperCase();
+      const cls = level === 'ERROR' ? 'line-error' : (level === 'WARN' ? 'line-warn' : 'line-info');
+      const div = document.createElement('div');
+      div.className = cls;
+      const ts = ev.time ? new Date(ev.time).toLocaleTimeString() : new Date().toLocaleTimeString();
+      const phase = ev.phase ? `[${ev.phase}]` : '[pentest]';
+      const msg = ev.message || '';
+      let suffix = '';
+      if (ev.data && typeof ev.data === 'object') {
+        const data = Object.entries(ev.data).slice(0, 6).map(([k, v]) => `${k}=${v}`);
+        if (data.length > 0) suffix = ` {${data.join(' ')}}`;
+      }
+      div.textContent = `${ts} ${level} ${phase} ${msg}${suffix}`;
+      term.appendChild(div);
+      while (term.children.length > TERMINAL_MAX_LINES) {
+        term.removeChild(term.firstChild);
+      }
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function setPentestStreamState(v) {
+      const el = document.getElementById('pentest-stream-state');
+      if (el) el.textContent = v;
+    }
+
+    function stopPentestStream() {
+      if (pentestWS) {
+        try { pentestWS.onclose = null; pentestWS.close(); } catch { }
+        pentestWS = null;
+      }
+      if (pentestPollTimer) {
+        clearInterval(pentestPollTimer);
+        pentestPollTimer = null;
+      }
+    }
+
+    async function loadPentestHistory(jobID) {
+      if (!jobID) return;
+      clearPentestTerminal();
+      pentestLastSeq = 0;
+      try {
+        const data = await api(`/api/v1/pentest/jobs/${jobID}/events/history?since=0`);
+        const events = Array.isArray(data.events) ? data.events : [];
+        events.forEach((ev) => {
+          pentestLastSeq = Math.max(pentestLastSeq, Number(ev.seq || 0));
+          appendPentestLine(ev);
+        });
+      } catch (e) {
+        appendPentestLine({ level: 'WARN', phase: 'history', message: String(e.message || e) });
+      }
+    }
+
+    function startPentestPolling(jobID) {
+      if (pentestPollTimer) clearInterval(pentestPollTimer);
+      pentestPollTimer = setInterval(async () => {
+        if (!jobID || jobID !== pentestJobID) return;
+        try {
+          const data = await api(`/api/v1/pentest/jobs/${jobID}/events/history?since=${pentestLastSeq}`);
+          const events = Array.isArray(data.events) ? data.events : [];
+          events.forEach((ev) => {
+            pentestLastSeq = Math.max(pentestLastSeq, Number(ev.seq || 0));
+            appendPentestLine(ev);
+          });
+          const job = pentestJobsCache.find(j => j.id === jobID);
+          if (job && (job.status === 'completed' || job.status === 'failed' || job.status === 'stopped')) {
+            setPentestStreamState('finalizado');
+            if (pentestPollTimer) { clearInterval(pentestPollTimer); pentestPollTimer = null; }
+          }
+        } catch { }
+      }, 1500);
+    }
+
+    async function connectPentestWS(jobID) {
+      stopPentestStream();
+      await loadPentestHistory(jobID);
+      if (!jobID) return;
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = window.location.host;
+      const wsURL = `${proto}://${host}/api/v1/pentest/ws/${encodeURIComponent(jobID)}?since=${pentestLastSeq}`;
+      const protocols = token ? ['scannn3d.v1', `scannn3d.jwt.${token}`] : ['scannn3d.v1'];
+      try {
+        setPentestStreamState('conectando...');
+        pentestWS = new WebSocket(wsURL, protocols);
+        pentestWS.onopen = () => setPentestStreamState('conectado');
+        pentestWS.onmessage = (evt) => {
+          try {
+            const ev = JSON.parse(evt.data);
+            pentestLastSeq = Math.max(pentestLastSeq, Number(ev.seq || 0));
+            appendPentestLine(ev);
+          } catch { }
+        };
+        pentestWS.onerror = () => {
+          setPentestStreamState('fallback polling');
+          startPentestPolling(jobID);
+        };
+        pentestWS.onclose = () => {
+          const job = pentestJobsCache.find(j => j.id === jobID);
+          if (job && (job.status === 'completed' || job.status === 'failed' || job.status === 'stopped')) {
+            setPentestStreamState('finalizado');
+          } else {
+            setPentestStreamState('fallback polling');
+            startPentestPolling(jobID);
+          }
+        };
+      } catch (e) {
+        setPentestStreamState('fallback polling');
+        startPentestPolling(jobID);
+      }
+    }
+
+    async function createPentestJob() {
+      if (!canCreateScans()) {
+        setPentestFeedback('Perfil viewer possui acesso somente leitura.', true);
+        return;
+      }
+      const target = (document.getElementById('pentest-target').value || '').trim();
+      if (!target) {
+        setPentestFeedback('Informe um alvo IP ou URL.', true);
+        return;
+      }
+      const module = document.getElementById('pentest-module').value || 'auto';
+      const targetType = document.getElementById('pentest-target-type').value || 'auto';
+      const threads = Number(document.getElementById('pentest-threads').value || 20);
+      const tools = selectedPentestTools();
+      let toolArgs = {};
+      const rawArgs = (document.getElementById('pentest-args-json').value || '').trim();
+      if (rawArgs) {
+        try {
+          const parsed = JSON.parse(rawArgs);
+          if (parsed && typeof parsed === 'object') {
+            toolArgs = parsed;
+          } else {
+            throw new Error('JSON invalido');
+          }
+        } catch (e) {
+          setPentestFeedback('JSON de argumentos invalido.', true);
+          return;
+        }
+      }
+      try {
+        const created = await api('/api/v1/pentest/jobs', {
+          method: 'POST',
+          body: JSON.stringify({
+            target,
+            module,
+            target_type: targetType,
+            threads,
+            tools,
+            tool_args: toolArgs,
+          }),
+        });
+        setPentestFeedback(`Pentest job ${created.id} criado.`, false);
+        showToast('ok', `Pentest job ${created.id} criado.`);
+        await refreshPentestJobs();
+        attachPentestJob(created.id);
+      } catch (e) {
+        setPentestFeedback(e.message || 'Falha ao criar pentest job.', true);
+        showToast('err', e.message || 'Falha ao criar pentest job.');
+      }
+    }
+
+    function renderPentestJobs(items) {
+      const tbody = document.getElementById('pentest-jobs');
+      const sel = document.getElementById('pentest-job-select');
+      if (!tbody || !sel) return;
+      tbody.innerHTML = '';
+      const previous = sel.value;
+      sel.innerHTML = '<option value="">Selecione job...</option>';
+      if (!items || items.length === 0) {
+        setEmptyRow(tbody, 7);
+        return;
+      }
+      items.forEach((j) => {
+        const tr = document.createElement('tr');
+        const started = j.started_at ? new Date(j.started_at).toLocaleString() : '-';
+        const tools = Array.isArray(j.tools) ? j.tools.join(', ') : '-';
+        tr.innerHTML = `<td>${j.id}</td><td>${j.resolved_target || j.target}</td><td>${j.module}</td><td>${j.status}</td><td>${tools}</td><td>${started}</td><td><button class="btn-neutral" onclick="attachPentestJob('${j.id}')">Selecionar</button></td>`;
+        tbody.appendChild(tr);
+        const o = document.createElement('option');
+        o.value = j.id;
+        o.textContent = `${j.id} | ${j.status} | ${j.resolved_target || j.target}`;
+        sel.appendChild(o);
+      });
+      if (previous) {
+        sel.value = previous;
+      }
+    }
+
+    async function refreshPentestJobs() {
+      try {
+        pentestJobsCache = await api('/api/v1/pentest/jobs');
+        renderPentestJobs(pentestJobsCache);
+        if (pentestJobID) {
+          const current = pentestJobsCache.find(j => j.id === pentestJobID);
+          if (!current) {
+            pentestJobID = '';
+            stopPentestStream();
+            setPentestStreamState('desconectado');
+          }
+        }
+        renderSelectedScanDetails();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function attachPentestJob(jobID) {
+      const sel = document.getElementById('pentest-job-select');
+      const id = jobID || (sel ? sel.value : '');
+      if (!id) {
+        pentestJobID = '';
+        stopPentestStream();
+        setPentestStreamState('desconectado');
+        return;
+      }
+      pentestJobID = id;
+      if (sel) sel.value = id;
+      connectPentestWS(id);
+    }
+
+    function reconnectPentestStream() {
+      if (!pentestJobID) return;
+      connectPentestWS(pentestJobID);
+    }
+
+    async function stopPentestJob() {
+      if (!pentestJobID) return;
+      if (!canCreateScans()) {
+        showToast('err', 'Perfil viewer nao pode parar jobs.');
+        return;
+      }
+      try {
+        await api(`/api/v1/pentest/jobs/${pentestJobID}/stop`, { method: 'POST' });
+        showToast('ok', `Solicitada parada do job ${pentestJobID}.`);
+        await refreshPentestJobs();
+      } catch (e) {
+        showToast('err', e.message || 'Falha ao parar job.');
+      }
+    }
+
+    async function downloadPentestReport() {
+      if (!pentestJobID) {
+        showToast('err', 'Selecione um pentest job.');
+        return;
+      }
+      try {
+        await downloadWithAuth(`/api/v1/pentest/jobs/${pentestJobID}/report.txt`, `${pentestJobID}-summary.txt`);
+      } catch (e) {
+        showToast('err', e.message || 'Falha ao baixar report TXT.');
+      }
+    }
+
+    async function refreshTemplates() {
+      try {
+        const list = await api('/api/v1/templates');
+        renderTemplates(list);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderTemplates(items) {
+      const tbody = document.getElementById('templates-list');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!items || items.length === 0) {
+        setEmptyRow(tbody, 5);
+        return;
+      }
+      items.forEach(t => {
+        const tr = document.createElement('tr');
+        const sev = (t.severity || 'low').toLowerCase();
+        tr.innerHTML = `<td>${t.id}</td><td>${t.name}</td><td><span class="pill ${sev}">${sev}</span></td><td>${t.path}</td><td><button class="btn-neutral" onclick="deleteTemplate('${t.path}')">Excluir</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function uploadTemplate() {
+      if (!isAdmin()) {
+        showToast('err', 'Apenas admin pode gerenciar templates.');
+        return;
+      }
+      const fileInput = document.getElementById('template-upload');
+      if (!fileInput || !fileInput.files[0]) {
+        showToast('err', 'Selecione um arquivo .yaml');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('template', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/api/v1/templates', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Falha no upload');
+        showToast('ok', 'Template enviado com sucesso.');
+        fileInput.value = '';
+        refreshTemplates();
+      } catch (e) {
+        showToast('err', e.message);
+      }
+    }
+
+    async function deleteTemplate(path) {
+      if (!confirm('Deseja realmente excluir este template?')) return;
+      try {
+        await api(`/api/v1/templates/${path}`, { method: 'DELETE' });
+        showToast('ok', 'Template excluído.');
+        refreshTemplates();
+      } catch (e) {
+        showToast('err', e.message);
+      }
+    }
+
+    function showToast(kind, msg) {
+      const wrap = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = 'toast ' + (kind === 'ok' ? 'ok' : 'err');
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(() => { el.remove(); }, 3600);
+    }
+
+    function setTab(tabId, el) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+      const pane = document.getElementById(tabId);
+      if (pane) pane.classList.add('active');
+      if (el) el.classList.add('active');
+    }
+
+    function resolveTargetInputGuidance(targetType) {
+      const t = targetType || 'auto';
+      if (t === 'url') {
+        return {
+          placeholder: 'https://app.exemplo.com/login',
+          hint: 'URL: informe endpoint HTTP/HTTPS completo. Sequencia recomendada: wafw00f -> whatweb -> nmap -> web/api.'
+        };
+      }
+      if (t === 'ip') {
+        return {
+          placeholder: '10.0.0.8',
+          hint: 'IP: varredura de infraestrutura (portas e servicos). Use modo infra para foco em rede.'
+        };
+      }
+      if (t === 'domain') {
+        return {
+          placeholder: 'exemplo.com',
+          hint: 'Dominio: subfinder e validacao de subdominios sao executados automaticamente antes da varredura web/api.'
+        };
+      }
+      return {
+        placeholder: 'https://app.exemplo.com | 10.0.0.8 | exemplo.com',
+        hint: 'Auto: detecta URL, IP ou Dominio automaticamente e aplica estrategia recomendada.'
+      };
+    }
+
+    function updateTargetInputGuidance() {
+      const targetTypeEl = document.getElementById('target-type');
+      const targetInput = document.getElementById('target');
+      const hint = document.getElementById('target-hint');
+      if (!targetTypeEl || !targetInput || !hint) {
+        return;
+      }
+      const ui = resolveTargetInputGuidance(targetTypeEl.value);
+      targetInput.placeholder = ui.placeholder;
+      hint.textContent = ui.hint;
+    }
+
+    function resetScanPreflightState() {
+      scanPreflight = null;
+      renderScanPreflightSummary(null);
+      const submitBtn = document.getElementById('create-scan-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.title = 'Valide o alvo antes de criar o scan';
+      }
+    }
+
+    function syncTargetTypeHint() {
+      resetScanPreflightState();
+      updateTargetInputGuidance();
+    }
+
+    let severityChart = null;
+    let moduleChart = null;
+
+    function renderDashboardKPIs(scans, targets, vulns) {
+      const running = scans.filter(s => s.status === 'running' || s.status === 'queued').length;
+      document.getElementById('kpi-scans').textContent = String(scans.length);
+      document.getElementById('kpi-running').textContent = String(running);
+      document.getElementById('kpi-vulns').textContent = String(vulns.length);
+      document.getElementById('kpi-targets').textContent = String(targets.length);
+
+      renderDashboardCharts(vulns);
+    }
+
+    function renderDashboardCharts(vulns) {
+      if (!vulns) return;
+
+      // Severity Distribution
+      const sevData = { critical: 0, high: 0, medium: 0, low: 0 };
+      vulns.forEach(v => {
+        const s = (v.severity || 'low').toLowerCase();
+        if (sevData.hasOwnProperty(s)) sevData[s]++;
+      });
+
+      const sevLabels = ['critical', 'high', 'medium', 'low'];
+      const sevValues = sevLabels.map(l => sevData[l]);
+
+      const ctxSev = document.getElementById('severity-chart');
+      if (ctxSev) {
+        if (!severityChart) {
+          severityChart = new Chart(ctxSev, {
+            type: 'doughnut',
+            data: {
+              labels: sevLabels,
+              datasets: [{
+                data: sevValues,
+                backgroundColor: ['#ff4d4d', '#ff9f43', '#feca57', '#48dbfb'],
+                borderWidth: 0,
+                hoverOffset: 4
+              }]
+            },
+            options: {
+              cutout: '70%',
+              plugins: {
+                legend: { position: 'bottom', labels: { color: '#8a9ea2', font: { family: 'Space Grotesk' } } }
+              }
+            }
+          });
+        } else {
+          severityChart.data.datasets[0].data = sevValues;
+          severityChart.update();
+        }
+      }
+
+      // Module Distribution
+      const modData = {};
+      vulns.forEach(v => {
+        const m = v.type || 'unknown';
+        modData[m] = (modData[m] || 0) + 1;
+      });
+
+      const modLabels = Object.keys(modData);
+      const modValues = Object.values(modData);
+
+      const ctxMod = document.getElementById('module-chart');
+      if (ctxMod) {
+        if (!moduleChart) {
+          moduleChart = new Chart(ctxMod, {
+            type: 'bar',
+            data: {
+              labels: modLabels,
+              datasets: [{
+                label: 'Achados',
+                data: modValues,
+                backgroundColor: '#43e5b5',
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8a9ea2' } },
+                x: { grid: { display: false }, ticks: { color: '#8a9ea2' } }
+              },
+              plugins: { legend: { display: false } }
+            }
+          });
+        } else {
+          moduleChart.data.labels = modLabels;
+          moduleChart.data.datasets[0].data = modValues;
+          moduleChart.update();
+        }
+      }
+    }
+
+    function renderTargetRisk(targets, scans, vulns) {
+      const tbody = document.getElementById('target-risk');
+      tbody.innerHTML = '';
+      const scansPerTarget = {};
+      scans.forEach(s => { scansPerTarget[s.target_id] = (scansPerTarget[s.target_id] || 0) + 1; });
+
+      const risk = {};
+      (targets || []).forEach(t => {
+        risk[t.id] = { critical: 0, high: 0, medium: 0, low: 0 };
+      });
+      vulns.forEach(v => {
+        if (!risk[v.target_id]) risk[v.target_id] = { critical: 0, high: 0, medium: 0, low: 0 };
+        const sev = String(v.severity || 'low').toLowerCase();
+        if (sev === 'critical') risk[v.target_id].critical++;
+        else if (sev === 'high') risk[v.target_id].high++;
+        else if (sev === 'medium') risk[v.target_id].medium++;
+        else risk[v.target_id].low++;
+      });
+
+      targets.forEach(t => {
+        const r = risk[t.id] || { critical: 0, high: 0, medium: 0, low: 0 };
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t.address}</td><td>${scansPerTarget[t.id] || 0}</td><td>${r.critical}</td><td>${r.high}</td><td>${r.medium}</td><td>${r.low}</td>`;
+        tbody.appendChild(tr);
+      });
+      if (!targets || targets.length === 0) {
+        setEmptyRow(tbody, 6);
+      }
+    }
+
+    function renderScanSelectors(scans) {
+      const logSel = document.getElementById('log-scan-select');
+      const currentLog = logSel ? logSel.value : '';
+      if (logSel) {
+        logSel.innerHTML = '<option value="">Selecione scan para terminal...</option>';
+      }
+      scans.forEach(s => {
+        if (logSel) {
+          const lo = document.createElement('option');
+          lo.value = s.id;
+          lo.textContent = `${s.id} | ${resolveTargetAddress(s.target_id)} | ${s.status}`;
+          logSel.appendChild(lo);
+        }
+      });
+      if (logSel && currentLog) {
+        logSel.value = currentLog;
+      }
+      if (selectedScanID && !scans.some(s => s.id === selectedScanID)) {
+        selectedScanID = '';
+      }
+      if (!selectedScanID && scans.length > 0) {
+        selectedScanID = scans[0].id;
+      }
+    }
+
+    function resolveTargetAddress(targetID) {
+      const target = targetsCache.find(t => t.id === targetID);
+      return target ? target.address : (targetID || '-');
+    }
+
+    function statusPillHTML(statusRaw) {
+      const status = String(statusRaw || '-').toLowerCase();
+      let cls = 'low';
+      if (status === 'failed') cls = 'high';
+      if (status === 'queued' || status === 'running') cls = 'warn';
+      return `<span class="pill ${cls}">${status}</span>`;
+    }
+
+    function selectScan(scanID) {
+      if (!scanID) return;
+      const exists = scansCache.some(s => s.id === scanID);
+      if (!exists) return;
+      selectedScanID = scanID;
+      renderScans(scansCache);
+      renderSelectedScanDetails();
+    }
+
+    function summarizeScanSeverities(scanID) {
+      const summary = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+      (vulnsCache || []).forEach(v => {
+        if (v.scan_id !== scanID) return;
+        const sev = String(v.severity || 'info').toLowerCase();
+        if (sev === 'critical') summary.critical++;
+        else if (sev === 'high') summary.high++;
+        else if (sev === 'medium') summary.medium++;
+        else if (sev === 'low') summary.low++;
+        else summary.info++;
+      });
+      return summary;
+    }
+
+    function collectTargetKeys(value) {
+      if (!value) return [];
+      const raw = String(value).trim().toLowerCase();
+      if (!raw) return [];
+      const cleaned = raw.replace(/\s+/g, '').replace(/\/+$/, '');
+      const set = new Set([cleaned, cleaned.replace(/:\d+$/, '')]);
+      if (cleaned.includes('://')) {
+        try {
+          const u = new URL(cleaned);
+          if (u.origin) set.add(String(u.origin).toLowerCase());
+          if (u.host) set.add(String(u.host).toLowerCase());
+          if (u.hostname) set.add(String(u.hostname).toLowerCase());
+        } catch (_) { }
+      }
+      return Array.from(set).filter(Boolean);
+    }
+
+    function parseDateMS(value) {
+      const t = Date.parse(value || '');
+      return Number.isFinite(t) ? t : 0;
+    }
+
+    function findPentestJobForScan(scan) {
+      if (!scan || !Array.isArray(pentestJobsCache) || pentestJobsCache.length === 0) return null;
+      const targetAddress = resolveTargetAddress(scan.target_id);
+      const scanKeys = new Set([
+        ...collectTargetKeys(scan.normalized_target),
+        ...collectTargetKeys(targetAddress),
+      ]);
+      if (scanKeys.size === 0) return null;
+      const candidates = pentestJobsCache
+        .filter(j => j && j.report_txt && (j.status === 'completed' || j.status === 'failed' || j.status === 'stopped'))
+        .sort((a, b) => parseDateMS(b.finished_at || b.created_at) - parseDateMS(a.finished_at || a.created_at));
+      for (const job of candidates) {
+        const jobKeys = new Set([
+          ...collectTargetKeys(job.resolved_target),
+          ...collectTargetKeys(job.target),
+        ]);
+        for (const key of jobKeys) {
+          if (scanKeys.has(key)) {
+            return job;
+          }
+        }
+      }
+      return null;
+    }
+
+    function renderSelectedScanDetails() {
+      const empty = document.getElementById('scan-detail-empty');
+      const content = document.getElementById('scan-detail-content');
+      const txtButton = document.getElementById('scan-detail-download-txt');
+      const txtHint = document.getElementById('scan-detail-txt-hint');
+      if (!empty || !content || !txtButton || !txtHint) return;
+
+      const scan = scansCache.find(s => s.id === selectedScanID);
+      if (!scan) {
+        empty.classList.remove('hidden');
+        content.classList.add('hidden');
+        txtButton.disabled = true;
+        txtHint.textContent = '';
+        return;
+      }
+
+      empty.classList.add('hidden');
+      content.classList.remove('hidden');
+      document.getElementById('detail-scan-id').textContent = scan.id;
+      document.getElementById('detail-scan-target').textContent = resolveTargetAddress(scan.target_id);
+      document.getElementById('detail-scan-status').innerHTML = statusPillHTML(scan.status);
+      document.getElementById('detail-scan-mode').textContent = scan.mode || '-';
+      document.getElementById('detail-scan-type').textContent = scan.target_type || '-';
+      document.getElementById('detail-scan-profile').textContent = scan.profile || '-';
+      document.getElementById('detail-scan-started').textContent = scan.started_at ? new Date(scan.started_at).toLocaleString() : '-';
+      document.getElementById('detail-scan-finished').textContent = scan.finished_at ? new Date(scan.finished_at).toLocaleString() : '-';
+
+      const errorWrap = document.getElementById('detail-scan-error-wrap');
+      const errorText = document.getElementById('detail-scan-error');
+      if (scan.error) {
+        errorWrap.classList.remove('hidden');
+        errorText.textContent = scan.error;
+      } else {
+        errorWrap.classList.add('hidden');
+        errorText.textContent = '-';
+      }
+
+      const sev = summarizeScanSeverities(scan.id);
+      document.getElementById('detail-sev-critical').textContent = String(sev.critical);
+      document.getElementById('detail-sev-high').textContent = String(sev.high);
+      document.getElementById('detail-sev-medium').textContent = String(sev.medium);
+      document.getElementById('detail-sev-low').textContent = String(sev.low);
+      document.getElementById('detail-sev-info').textContent = String(sev.info);
+
+      const txtJob = findPentestJobForScan(scan);
+      txtButton.disabled = !txtJob;
+      txtHint.textContent = txtJob
+        ? `Report TXT disponivel pelo job ${txtJob.id}.`
+        : 'Nenhum report TXT de pentest correlacionado para este scan.';
+    }
+
+    function openSelectedScanInTerminal() {
+      if (!selectedScanID) {
+        showToast('err', 'Selecione um scan para abrir no terminal.');
+        return;
+      }
+      const logSel = document.getElementById('log-scan-select');
+      if (logSel) {
+        logSel.value = selectedScanID;
+      }
+      const navBtn = document.querySelector('[data-tab="terminal-tab"]');
+      setTab('terminal-tab', navBtn || null);
+      attachTerminalToSelected();
+    }
+
+    function renderToolsStatus(payload) {
+      const tbody = document.getElementById('tools-status');
+      tbody.innerHTML = '';
+      const list = payload && payload.tools ? payload.tools : [];
+      if (list.length === 0) {
+        setEmptyRow(tbody, 3);
+        return;
+      }
+      list.forEach(t => {
+        const tr = document.createElement('tr');
+        const status = t.available ? '<span class="pill low">online</span>' : '<span class="pill high">missing</span>';
+        tr.innerHTML = `<td>${t.name}</td><td>${status}</td><td>${t.path || '-'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderProjects(items) {
+      const tbody = document.getElementById('projects');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const list = items || [];
+      if (list.length === 0) {
+        setEmptyRow(tbody, 4);
+        return;
+      }
+      list.forEach(p => {
+        const tr = document.createElement('tr');
+        const created = p.created_at ? new Date(p.created_at).toLocaleString() : '';
+        const scope = Array.isArray(p.scope) ? p.scope.join(', ') : '';
+        tr.innerHTML = `<td>${p.name}</td><td>${p.type}</td><td>${scope}</td><td>${created}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function ensureTerminalSelection() {
+      const logSel = document.getElementById('log-scan-select');
+      if (!logSel) return;
+      if (!logSel.value && scansCache.length > 0) {
+        logSel.value = scansCache[0].id;
+        attachTerminalToSelected();
+      } else if (logSel.value && logSel.value !== terminalScanID && !streamAbort) {
+        attachTerminalToSelected();
+      }
+    }
+
+    function setStreamState(text) {
+      const el = document.getElementById('log-stream-state');
+      if (el) el.textContent = text;
+    }
+
+    function clearTerminal() {
+      const term = document.getElementById('scan-terminal');
+      if (term) term.innerHTML = '';
+    }
+
+    function getScanSubdomainsMap(scanID) {
+      if (!subdomainsByScan[scanID]) {
+        subdomainsByScan[scanID] = {};
+      }
+      return subdomainsByScan[scanID];
+    }
+
+    function normalizeSubdomainValue(v) {
+      if (!v) return '';
+      let value = String(v).trim().toLowerCase();
+      if (value.includes('://')) {
+        try {
+          const u = new URL(value);
+          value = u.hostname || value;
+        } catch { }
+      }
+      value = value.replace(/\/+$/, '');
+      value = value.replace(/:\d+$/, '');
+      return value;
+    }
+
+    function addSubdomain(scanID, raw, source) {
+      const normalized = normalizeSubdomainValue(raw);
+      if (!scanID || !normalized) return false;
+      const map = getScanSubdomainsMap(scanID);
+      if (map[normalized]) {
+        if (map[normalized].source === 'bundle' || source === 'bundle') {
+          map[normalized].source = 'bundle';
+        }
+        return false;
+      }
+      map[normalized] = { value: normalized, source: source || 'stream' };
+      return true;
+    }
+
+    function ingestSubdomainEvent(scanID, ev) {
+      if (!scanID || !ev || !ev.data) return false;
+      if (String(ev.phase || '') !== 'subfinder') return false;
+      const kind = String(ev.kind || '');
+      if (kind !== 'validation_target_ok' && kind !== 'tool_completed') return false;
+      const d = ev.data || {};
+      let changed = false;
+      if (d.url) {
+        changed = addSubdomain(scanID, d.url, 'stream') || changed;
+      }
+      if (d.subdomain) {
+        changed = addSubdomain(scanID, d.subdomain, 'stream') || changed;
+      }
+      return changed;
+    }
+
+    async function loadSubdomainsFromBundle(scanID) {
+      try {
+        const bundle = await api(`/api/v1/scans/${scanID}`);
+        const assets = bundle && Array.isArray(bundle.assets) ? bundle.assets : [];
+        let changed = false;
+        assets.forEach(a => {
+          if (String(a.platform || '') !== 'subdomain') return;
+          if (a.host) {
+            changed = addSubdomain(scanID, a.host, 'bundle') || changed;
+          }
+        });
+        if (changed) renderSubdomains(scanID);
+      } catch (_) { }
+    }
+
+    function renderSubdomains(scanID) {
+      const tbody = document.getElementById('subdomains-list');
+      const countEl = document.getElementById('subdomains-count');
+      const emptyEl = document.getElementById('subdomains-empty');
+      if (!tbody || !countEl || !emptyEl) return;
+      tbody.innerHTML = '';
+      if (!scanID) {
+        countEl.textContent = '0 encontrados';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      const map = getScanSubdomainsMap(scanID);
+      const rows = Object.values(map).sort((a, b) => a.value.localeCompare(b.value));
+      countEl.textContent = `${rows.length} encontrados`;
+      if (rows.length === 0) {
+        emptyEl.style.display = 'block';
+        setEmptyRow(tbody, 2);
+        return;
+      }
+      emptyEl.style.display = 'none';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.value}</td><td>${r.source}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderStepResults(items) {
+      const tbody = document.getElementById('step-results');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!items || items.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan=\"4\" class=\"muted\">Nenhum dado de etapa para este scan.</td>';
+        tbody.appendChild(tr);
+        return;
+      }
+      items.forEach(st => {
+        const statusPill = st.status === 'completed' ? '<span class=\"pill low\">ok</span>' : '<span class=\"pill high\">fail</span>';
+        const sev = st.severity || '-';
+        const summary = st.summary || '-';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${st.name || '-'}</td><td>${statusPill}</td><td>${summary}</td><td>${sev}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadStepResults(scanID) {
+      if (!scanID) {
+        renderStepResults([]);
+        return;
+      }
+      try {
+        if (stepResultsCache[scanID]) {
+          renderStepResults(stepResultsCache[scanID]);
+          return;
+        }
+        const bundle = await api(`/api/v1/scans/${scanID}`);
+        const steps = bundle && Array.isArray(bundle.step_results) ? bundle.step_results : [];
+        stepResultsCache[scanID] = steps;
+        renderStepResults(steps);
+      } catch (e) {
+        renderStepResults([]);
+      }
+    }
+
+    function appendTerminalLine(ev) {
+      const term = document.getElementById('scan-terminal');
+      if (!term) return;
+      const line = document.createElement('div');
+      const level = String(ev.level || 'INFO').toUpperCase();
+      const cls = level === 'ERROR' ? 'line-error' : (level === 'WARN' ? 'line-warn' : 'line-info');
+      line.className = cls;
+      const ts = ev.time ? new Date(ev.time).toLocaleTimeString() : new Date().toLocaleTimeString();
+      const phase = ev.phase ? `[${ev.phase}]` : '[scan]';
+      const msg = ev.message || '';
+      let suffix = '';
+      if (ev.data && typeof ev.data === 'object') {
+        const items = Object.entries(ev.data).slice(0, 6).map(([k, v]) => `${k}=${v}`);
+        if (items.length > 0) suffix = ` {${items.join(' ')}}`;
+      }
+      line.textContent = `${ts} ${level} ${phase} ${msg}${suffix}`;
+      term.appendChild(line);
+      if (terminalScanID) {
+        if (ingestSubdomainEvent(terminalScanID, ev)) {
+          renderSubdomains(terminalScanID);
+        }
+      }
+      while (term.children.length > TERMINAL_MAX_LINES) {
+        term.removeChild(term.firstChild);
+      }
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function stopTerminalStream() {
+      if (streamAbort) {
+        streamAbort.abort();
+        streamAbort = null;
+      }
+    }
+
+    async function loadTerminalHistory(scanID) {
+      const history = await api(`/api/v1/scans/${scanID}/events/history?since=0`);
+      clearTerminal();
+      renderSubdomains(scanID);
+      const events = history && history.events ? history.events : [];
+      events.forEach(ev => {
+        terminalLastSeq = Math.max(terminalLastSeq, Number(ev.seq || 0));
+        appendTerminalLine(ev);
+      });
+      await loadSubdomainsFromBundle(scanID);
+    }
+
+    async function consumeSSEStream(scanID, signal) {
+      const headers = { 'Accept': 'text/event-stream', 'Authorization': 'Bearer ' + token };
+      const res = await fetch(`/api/v1/scans/${scanID}/events?since=${terminalLastSeq}`, { headers, signal });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `stream status ${res.status}`);
+      }
+      if (!res.body) {
+        throw new Error('stream body unavailable');
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx = buffer.indexOf('\n\n');
+        while (idx >= 0) {
+          const block = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const lines = block.split('\n');
+          let eventID = 0;
+          let dataText = '';
+          for (const ln of lines) {
+            if (ln.startsWith('id:')) {
+              eventID = Number(ln.slice(3).trim()) || 0;
+            } else if (ln.startsWith('data:')) {
+              dataText += ln.slice(5).trim();
+            }
+          }
+          if (dataText) {
+            try {
+              const ev = JSON.parse(dataText);
+              terminalLastSeq = Math.max(terminalLastSeq, Number(ev.seq || eventID || 0));
+              appendTerminalLine(ev);
+            } catch { }
+          }
+          idx = buffer.indexOf('\n\n');
+        }
+      }
+    }
+
+    function isTransientStreamError(err) {
+      const msg = String((err && err.message) || err || '').toLowerCase();
+      return msg.includes('network error') || msg.includes('failed to fetch') || msg.includes('load failed');
+    }
+
+    async function isScanTerminalStatus(scanID) {
+      const fromCache = scansCache.find(s => s.id === scanID);
+      if (fromCache && (fromCache.status === 'completed' || fromCache.status === 'failed')) {
+        return true;
+      }
+      try {
+        const bundle = await api(`/api/v1/scans/${scanID}`);
+        const st = String(bundle && bundle.scan && bundle.scan.status || '').toLowerCase();
+        return st === 'completed' || st === 'failed';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    async function runTerminalStream(scanID) {
+      stopTerminalStream();
+      streamAbort = new AbortController();
+      const signal = streamAbort.signal;
+      terminalScanID = scanID;
+      setStreamState('conectando...');
+      try {
+        await loadTerminalHistory(scanID);
+        setStreamState('conectado');
+        while (!signal.aborted && terminalScanID === scanID) {
+          try {
+            await consumeSSEStream(scanID, signal);
+          } catch (err) {
+            if (signal.aborted) {
+              break;
+            }
+            // Quando o backend fecha o stream apos finalizacao, alguns browsers retornam "network error".
+            // Nao devemos apresentar isso como falha se o scan ja terminou.
+            if (isTransientStreamError(err)) {
+              await loadTerminalHistory(scanID);
+              if (await isScanTerminalStatus(scanID)) {
+                break;
+              }
+              setStreamState('reconectando...');
+              await new Promise(resolve => setTimeout(resolve, 1200));
+              continue;
+            }
+            throw err;
+          }
+          if (await isScanTerminalStatus(scanID)) {
+            break;
+          }
+          setStreamState('reconectando...');
+          await new Promise(resolve => setTimeout(resolve, 1200));
+        }
+        if (!signal.aborted) {
+          setStreamState('finalizado');
+        }
+      } catch (e) {
+        if (!signal.aborted) {
+          setStreamState('erro no stream');
+          appendTerminalLine({ level: 'ERROR', phase: 'stream', message: String(e.message || e) });
+        }
+      } finally {
+        if (streamAbort && streamAbort.signal === signal) {
+          streamAbort = null;
+        }
+      }
+    }
+
+    function attachTerminalToSelected() {
+      const sel = document.getElementById('log-scan-select');
+      if (!sel || !sel.value) {
+        stopTerminalStream();
+        setStreamState('desconectado');
+        renderSubdomains('');
+        renderStepResults([]);
+        return;
+      }
+      terminalLastSeq = 0;
+      terminalScanID = sel.value;
+      renderSubdomains(terminalScanID);
+      loadStepResults(terminalScanID);
+      runTerminalStream(sel.value);
+    }
+
+    function reconnectTerminal() {
+      if (terminalScanID) {
+        terminalLastSeq = Math.max(0, terminalLastSeq - 5);
+        runTerminalStream(terminalScanID);
+        return;
+      }
+      attachTerminalToSelected();
+    }
+
+    function setUsersFeedback(msg, isError) {
+      const el = document.getElementById('users-feedback');
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        el.classList.remove('error');
+        return;
+      }
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.classList.toggle('error', !!isError);
+    }
+
+    function isAdmin() {
+      return currentUser && String(currentUser.role).toLowerCase() === 'admin';
+    }
+
+    function canCreateScans() {
+      if (!currentUser) return false;
+      return String(currentUser.role).toLowerCase() !== 'viewer';
+    }
+
+    function canCreateProjects() {
+      return canCreateScans();
+    }
+
+    function updateRoleUI() {
+      const role = currentUser ? String(currentUser.role || '').toLowerCase() : '';
+      const usersCard = document.getElementById('users-card');
+      const usersReadonly = document.getElementById('users-readonly-msg');
+      const usersMenuBtn = document.getElementById('users-menu-btn');
+      const createBtn = document.getElementById('create-scan-btn');
+      const createProjectBtn = document.getElementById('create-project-btn');
+      usersCard.classList.toggle('hidden', !isAdmin());
+      if (usersReadonly) usersReadonly.classList.toggle('hidden', isAdmin());
+      if (usersMenuBtn) usersMenuBtn.classList.toggle('hidden', !isAdmin());
+      if (createBtn) {
+        createBtn.disabled = !canCreateScans();
+        createBtn.title = canCreateScans() ? '' : 'Perfil viewer possui acesso somente leitura';
+      }
+      if (createProjectBtn) {
+        createProjectBtn.disabled = !canCreateProjects();
+        createProjectBtn.title = canCreateProjects() ? '' : 'Perfil viewer possui acesso somente leitura';
+      }
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('users');
+      tbody.innerHTML = '';
+      if (!users || users.length === 0) {
+        setEmptyRow(tbody, 3);
+        return;
+      }
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        const created = u.created_at ? new Date(u.created_at).toLocaleString() : '';
+        tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td><td>${created}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setEmptyRow(tbody, colspan) {
+      const tr = document.createElement('tr');
+      tr.className = 'empty-row';
+      tr.innerHTML = `<td colspan="${colspan}">Nenhum resultado encontrado.</td>`;
+      tbody.appendChild(tr);
+    }
+
+    async function createUser() {
+      if (!isAdmin()) {
+        setUsersFeedback('Apenas admin pode criar usuarios.', true);
+        return;
+      }
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value.trim();
+      const role = document.getElementById('new-role').value;
+      if (!username || !password) {
+        setUsersFeedback('Informe usuario e senha.', true);
+        return;
+      }
+      try {
+        await api('/api/v1/users', {
+          method: 'POST',
+          body: JSON.stringify({ username, password, role }),
+        });
+        setUsersFeedback(`Usuario ${username} criado com perfil ${role}.`, false);
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+        const users = await api('/api/v1/users');
+        renderUsers(users);
+      } catch (e) {
+        setUsersFeedback(e.message || 'Falha ao criar usuario.', true);
+      }
+    }
+
+    async function changeMyPassword() {
+      const current = document.getElementById('account-current-password').value.trim();
+      const next = document.getElementById('account-new-password').value.trim();
+      const confirm = document.getElementById('account-confirm-password').value.trim();
+      if (!current || !next || !confirm) {
+        setAccountFeedback('Informe senha atual, nova senha e confirmacao.', true);
+        return;
+      }
+      try {
+        await api('/api/v1/auth/change-password', {
+          method: 'POST',
+          body: JSON.stringify({
+            current_password: current,
+            new_password: next,
+            confirm_password: confirm,
+          }),
+        });
+        setAccountFeedback('Senha atualizada com sucesso.', false);
+        showToast('ok', 'Senha atualizada com sucesso.');
+        document.getElementById('account-current-password').value = '';
+        document.getElementById('account-new-password').value = '';
+        document.getElementById('account-confirm-password').value = '';
+      } catch (e) {
+        setAccountFeedback(e.message || 'Falha ao alterar senha.', true);
+      }
+    }
+
+    async function createProject() {
+      if (!canCreateProjects()) {
+        setProjectFeedback('Perfil viewer possui acesso somente leitura.', true);
+        return;
+      }
+      const name = document.getElementById('project-name').value.trim();
+      const type = document.getElementById('project-type').value;
+      const scopeRaw = document.getElementById('project-scope').value.trim();
+      const description = document.getElementById('project-description').value.trim();
+      if (!name) {
+        setProjectFeedback('Informe o nome do projeto.', true);
+        return;
+      }
+      if (!scopeRaw) {
+        setProjectFeedback('Informe ao menos um item de escopo.', true);
+        return;
+      }
+      const scope = scopeRaw.split(',').map(s => s.trim()).filter(Boolean);
+      if (scope.length === 0) {
+        setProjectFeedback('Escopo invalido.', true);
+        return;
+      }
+      try {
+        const created = await api('/api/v1/projects', {
+          method: 'POST',
+          body: JSON.stringify({ name, type, scope, description }),
+        });
+        setProjectFeedback(`Projeto ${created.name} criado com sucesso.`, false);
+        document.getElementById('project-name').value = '';
+        document.getElementById('project-scope').value = '';
+        document.getElementById('project-description').value = '';
+        projectsCache = await api('/api/v1/projects');
+        renderProjects(projectsCache);
+      } catch (e) {
+        setProjectFeedback(e.message || 'Falha ao criar projeto.', true);
+      }
+    }
+
+    window.addEventListener('popstate', syncRouteView);
+    syncRouteView();
+    syncTargetTypeHint();
+    goToScanStep(1);
+    renderScanPreflightSummary(null);
+    ['target', 'mode'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const evt = id === 'target' ? 'input' : 'change';
+      el.addEventListener(evt, () => {
+        resetScanPreflightState();
+        if (id === 'mode') {
+          updateTargetInputGuidance();
+        }
+        if (scanWizardStep === 2) {
+          goToScanStep(1);
+        }
+      });
+    });
+    ['user', 'pass'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        const msg = document.getElementById('login-msg');
+        if (!msg) return;
+        msg.style.display = 'none';
+        msg.textContent = '';
+      });
+    });
+    if (token && window.location.pathname !== '/login') {
+      refreshAll();
+    }
+    setInterval(() => { if (token) refreshAll(); }, 5000);
+  </script>
+</body>
+
+</html>

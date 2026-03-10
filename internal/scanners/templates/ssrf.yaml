@@ -1,0 +1,19 @@
+id: ssrf-internal
+info:
+  name: SSRF (Internal Indicators)
+  severity: high
+  description: "Detects SSRF via common internal service indicators."
+  recommendation: "Enforce destination allowlist for server-side fetches."
+
+http:
+  - method: GET
+    parameters: ["url", "uri", "path", "dest", "redirect", "callback", "target"]
+    payloads:
+      - "http://127.0.0.1:80"
+      - "http://localhost:22"
+      - "http://169.254.169.254/latest/meta-data/"
+      - "file:///etc/passwd"
+    matchers:
+      - type: word
+        part: body
+        words: ["root:x:0:0", "metadata", "169.254.169.254", "connection refused", "timeout"]
