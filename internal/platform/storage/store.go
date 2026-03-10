@@ -14,6 +14,7 @@ type Store interface {
 	CreateUser(username, passwordHash string, role Role) (User, error)
 	GetUserByUsername(username string) (User, bool)
 	GetUser(id string) (User, bool)
+	UpdateUser(userID, username, passwordHash string, role Role) (User, error)
 	UpdateUserPassword(userID, passwordHash string) error
 	ListUsers() []User
 	SeedAdminIfEmpty(passwordHash string)
@@ -116,6 +117,30 @@ func (s *InMemoryStore) GetUser(id string) (User, bool) {
 	defer s.mu.RUnlock()
 	u, ok := s.users[id]
 	return u, ok
+}
+
+func (s *InMemoryStore) UpdateUser(userID, username, passwordHash string, role Role) (User, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	u, ok := s.users[userID]
+	if !ok {
+		return User{}, errors.New("user not found")
+	}
+	if existingID, exists := s.usersByName[username]; exists && existingID != userID {
+		return User{}, errors.New("user already exists")
+	}
+	if u.Username != username {
+		delete(s.usersByName, u.Username)
+		s.usersByName[username] = userID
+		u.Username = username
+	}
+	u.Role = role
+	if passwordHash != "" {
+		u.PasswordHash = passwordHash
+	}
+	s.users[userID] = u
+	return u, nil
 }
 
 func (s *InMemoryStore) UpdateUserPassword(userID, passwordHash string) error {

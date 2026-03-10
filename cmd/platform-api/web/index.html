@@ -801,7 +801,8 @@
             <div class="form-field">
               <label class="field-label" for="new-role">Perfil</label>
               <select id="new-role">
-                <option value="viewer">views</option>
+                <option value="viewer">viewer</option>
+                <option value="analyst">analyst</option>
                 <option value="admin">admin</option>
               </select>
             </div>
@@ -818,10 +819,42 @@
                   <th>Usuario</th>
                   <th>Perfil</th>
                   <th>Criado em</th>
+                  <th>Acoes</th>
                 </tr>
               </thead>
               <tbody id="users"></tbody>
             </table>
+          </div>
+          <div class="mt-2">
+            <h4 class="card-title-tight">Editar Usuario</h4>
+            <div class="muted" id="edit-user-hint">Selecione um usuario da tabela para editar.</div>
+            <input id="edit-user-id" type="hidden" />
+            <div class="form-grid form-grid-4 mt-2">
+              <div class="form-field">
+                <label class="field-label" for="edit-username">Usuario</label>
+                <input id="edit-username" placeholder="usuario" disabled />
+              </div>
+              <div class="form-field">
+                <label class="field-label" for="edit-role">Perfil</label>
+                <select id="edit-role" disabled>
+                  <option value="viewer">viewer</option>
+                  <option value="analyst">analyst</option>
+                  <option value="admin">admin</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="field-label" for="edit-password">Nova senha</label>
+                <input id="edit-password" type="password" placeholder="deixe em branco para manter" disabled />
+              </div>
+              <div class="form-field">
+                <label class="field-label" for="edit-password-confirm">Confirmar nova senha</label>
+                <input id="edit-password-confirm" type="password" placeholder="confirmar nova senha" disabled />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-action" id="save-user-btn" onclick="saveUserEdits()" disabled>Salvar Alteracoes</button>
+              <button class="btn-neutral" id="cancel-user-btn" onclick="clearUserEditor()" disabled>Cancelar</button>
+            </div>
           </div>
         </div>
         <div class="card" id="users-readonly-msg">
@@ -864,6 +897,7 @@
     let targetsCache = [];
     let vulnsCache = [];
     let projectsCache = [];
+    let usersCache = [];
     let pentestJobsCache = [];
     let streamAbort = null;
     let terminalScanID = '';
@@ -883,6 +917,7 @@
     let pentestJobID = '';
     let pentestLastSeq = 0;
     let selectedScanID = '';
+    let editingUserID = '';
 
     async function api(path, options = {}) {
       const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -1212,8 +1247,7 @@
         await refreshTemplates();
         ensureTerminalSelection();
         if (isAdmin()) {
-          const users = await api('/api/v1/users');
-          renderUsers(users);
+          await refreshUsers();
           const tools = await api('/api/v1/admin/tools');
           renderToolsStatus(tools);
         }
@@ -2454,7 +2488,6 @@
     }
 
     function updateRoleUI() {
-      const role = currentUser ? String(currentUser.role || '').toLowerCase() : '';
       const usersCard = document.getElementById('users-card');
       const usersReadonly = document.getElementById('users-readonly-msg');
       const usersMenuBtn = document.getElementById('users-menu-btn');
@@ -2463,6 +2496,9 @@
       usersCard.classList.toggle('hidden', !isAdmin());
       if (usersReadonly) usersReadonly.classList.toggle('hidden', isAdmin());
       if (usersMenuBtn) usersMenuBtn.classList.toggle('hidden', !isAdmin());
+      if (!isAdmin()) {
+        clearUserEditor();
+      }
       if (createBtn) {
         createBtn.disabled = !canCreateScans();
         createBtn.title = canCreateScans() ? '' : 'Perfil viewer possui acesso somente leitura';
@@ -2473,17 +2509,103 @@
       }
     }
 
-    function renderUsers(users) {
-      const tbody = document.getElementById('users');
-      tbody.innerHTML = '';
-      if (!users || users.length === 0) {
-        setEmptyRow(tbody, 3);
+    async function refreshUsers() {
+      if (!isAdmin()) return;
+      const users = await api('/api/v1/users');
+      renderUsers(users);
+    }
+
+    function setUserEditorEnabled(enabled) {
+      ['edit-username', 'edit-role', 'edit-password', 'edit-password-confirm', 'save-user-btn', 'cancel-user-btn']
+        .forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = !enabled;
+        });
+    }
+
+    function populateUserEditor(user) {
+      editingUserID = user && user.id ? user.id : '';
+      document.getElementById('edit-user-id').value = editingUserID;
+      document.getElementById('edit-username').value = user ? (user.username || '') : '';
+      document.getElementById('edit-role').value = user ? (user.role || 'viewer') : 'viewer';
+      document.getElementById('edit-password').value = '';
+      document.getElementById('edit-password-confirm').value = '';
+      document.getElementById('edit-user-hint').textContent = user
+        ? `Editando ${user.username}. Deixe a senha em branco para manter a atual.`
+        : 'Selecione um usuario da tabela para editar.';
+      setUserEditorEnabled(!!editingUserID);
+    }
+
+    function clearUserEditor() {
+      editingUserID = '';
+      populateUserEditor(null);
+      if (usersCache.length > 0) {
+        renderUsers(usersCache);
+      }
+    }
+
+    function selectUserForEdit(userID) {
+      if (!isAdmin()) {
+        setUsersFeedback('Apenas admin pode editar usuarios.', true);
         return;
       }
-      users.forEach(u => {
+      const user = usersCache.find(u => u.id === userID);
+      if (!user) {
+        setUsersFeedback('Usuario nao encontrado.', true);
+        clearUserEditor();
+        return;
+      }
+      if (currentUser && currentUser.id === user.id) {
+        setUsersFeedback('Use a area Minha Conta para alterar a propria senha.', true);
+        clearUserEditor();
+        return;
+      }
+      setUsersFeedback('', false);
+      populateUserEditor(user);
+      renderUsers(usersCache);
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('users');
+      usersCache = Array.isArray(users) ? users.slice() : [];
+      if (editingUserID && !usersCache.some(u => u.id === editingUserID)) {
+        populateUserEditor(null);
+      }
+      tbody.innerHTML = '';
+      if (!usersCache || usersCache.length === 0) {
+        setEmptyRow(tbody, 4);
+        return;
+      }
+      usersCache.forEach(u => {
         const tr = document.createElement('tr');
+        if (u.id === editingUserID) {
+          tr.classList.add('user-row-selected');
+        }
         const created = u.created_at ? new Date(u.created_at).toLocaleString() : '';
-        tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td><td>${created}</td>`;
+        const usernameTd = document.createElement('td');
+        usernameTd.textContent = u.username || '';
+        const roleTd = document.createElement('td');
+        roleTd.textContent = u.role || '';
+        const createdTd = document.createElement('td');
+        createdTd.textContent = created;
+        const actionsTd = document.createElement('td');
+        if (currentUser && currentUser.id === u.id) {
+          const badge = document.createElement('span');
+          badge.className = 'muted';
+          badge.textContent = 'Conta atual';
+          actionsTd.appendChild(badge);
+        } else {
+          const btn = document.createElement('button');
+          btn.className = 'btn-neutral';
+          btn.textContent = u.id === editingUserID ? 'Editando' : 'Editar';
+          btn.disabled = u.id === editingUserID;
+          btn.onclick = () => selectUserForEdit(u.id);
+          actionsTd.appendChild(btn);
+        }
+        tr.appendChild(usernameTd);
+        tr.appendChild(roleTd);
+        tr.appendChild(createdTd);
+        tr.appendChild(actionsTd);
         tbody.appendChild(tr);
       });
     }
@@ -2515,10 +2637,52 @@
         setUsersFeedback(`Usuario ${username} criado com perfil ${role}.`, false);
         document.getElementById('new-username').value = '';
         document.getElementById('new-password').value = '';
-        const users = await api('/api/v1/users');
-        renderUsers(users);
+        document.getElementById('new-role').value = 'viewer';
+        await refreshUsers();
       } catch (e) {
         setUsersFeedback(e.message || 'Falha ao criar usuario.', true);
+      }
+    }
+
+    async function saveUserEdits() {
+      if (!isAdmin()) {
+        setUsersFeedback('Apenas admin pode editar usuarios.', true);
+        return;
+      }
+      const userID = document.getElementById('edit-user-id').value.trim();
+      const username = document.getElementById('edit-username').value.trim();
+      const role = document.getElementById('edit-role').value;
+      const newPassword = document.getElementById('edit-password').value.trim();
+      const confirmPassword = document.getElementById('edit-password-confirm').value.trim();
+      if (!userID || !username) {
+        setUsersFeedback('Selecione um usuario e informe um nome valido.', true);
+        return;
+      }
+      if ((newPassword && !confirmPassword) || (!newPassword && confirmPassword)) {
+        setUsersFeedback('Informe e confirme a nova senha para redefini-la.', true);
+        return;
+      }
+      if (newPassword && newPassword !== confirmPassword) {
+        setUsersFeedback('A nova senha e a confirmacao precisam coincidir.', true);
+        return;
+      }
+      try {
+        const updated = await api(`/api/v1/users/${encodeURIComponent(userID)}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            username,
+            role,
+            new_password: newPassword,
+            confirm_password: confirmPassword,
+          }),
+        });
+        setUsersFeedback(`Usuario ${updated.username} atualizado com sucesso.`, false);
+        showToast('ok', `Usuario ${updated.username} atualizado.`);
+        editingUserID = updated.id;
+        await refreshUsers();
+        selectUserForEdit(updated.id);
+      } catch (e) {
+        setUsersFeedback(e.message || 'Falha ao atualizar usuario.', true);
       }
     }
 

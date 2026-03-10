@@ -254,6 +254,33 @@ func (s *PostgresStore) GetUser(id string) (User, bool) {
 	return u, true
 }
 
+func (s *PostgresStore) UpdateUser(userID, username, passwordHash string, role Role) (User, error) {
+	var (
+		res sql.Result
+		err error
+	)
+	if passwordHash == "" {
+		res, err = s.exec("UPDATE users SET username = ?, role = ? WHERE id = ?", username, string(role), userID)
+	} else {
+		res, err = s.exec("UPDATE users SET username = ?, role = ?, password_hash = ? WHERE id = ?", username, string(role), passwordHash, userID)
+	}
+	if err != nil {
+		return User{}, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return User{}, err
+	}
+	if affected == 0 {
+		return User{}, errors.New("user not found")
+	}
+	u, ok := s.GetUser(userID)
+	if !ok {
+		return User{}, errors.New("user not found")
+	}
+	return u, nil
+}
+
 func (s *PostgresStore) UpdateUserPassword(userID, passwordHash string) error {
 	res, err := s.exec("UPDATE users SET password_hash = ? WHERE id = ?", passwordHash, userID)
 	if err != nil {

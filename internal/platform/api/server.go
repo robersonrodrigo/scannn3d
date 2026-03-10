@@ -54,6 +54,7 @@ func (s *Server) Routes() http.Handler {
 
 	// Users & Admin
 	mux.HandleFunc("/api/v1/users", s.auth(s.handleUsers))
+	mux.HandleFunc("/api/v1/users/", s.auth(s.handleUserByID))
 	mux.HandleFunc("/api/v1/admin/tools", s.auth(s.handleAdminTools))
 
 	// Projects

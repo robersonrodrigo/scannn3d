@@ -358,6 +358,14 @@ tbody tr:hover td {
   background: rgba(67, 229, 181, 0.2);
 }
 
+#users tbody tr.user-row-selected td {
+  background: rgba(14, 165, 233, 0.14);
+}
+
+#users tbody tr.user-row-selected:hover td {
+  background: rgba(14, 165, 233, 0.2);
+}
+
 .scans-master-detail {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
